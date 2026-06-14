@@ -1,6 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import IntroScene from '../components/IntroScene.jsx'
 import NewsCarousel from '../components/NewsCarousel.jsx'
+import ServicesSection from '../components/ServicesSection.jsx'
+import StatsSection from '../components/StatsSection.jsx'
+import AboutSection from '../components/AboutSection.jsx'
+import MissionSection from '../components/MissionSection.jsx'
+import ConsultSection from '../components/ConsultSection.jsx'
 import { fetchNews } from '../api/news.js'
 
 // Кнопки в Hero: плавный скролл к секциям (без перехода на новый URL)
@@ -113,83 +118,7 @@ export default function Home() {
         </button>
       </main>
 
-      {/* ===== О НАС ===== */}
-      <section
-        id="about"
-        className="relative z-10 scroll-mt-20 bg-black/80 backdrop-blur-sm"
-      >
-        <div className="mx-auto max-w-7xl px-6 py-20">
-          <div className="mb-10 flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-white sm:text-3xl">О нас</h2>
-              <p className="mt-1 text-sm text-white/50">
-                Центр цифрового развития Национального Банка Казахстана
-              </p>
-            </div>
-            <span className="hidden h-1 w-16 rounded-full bg-nbk-gold sm:block" />
-          </div>
-          <p className="text-white/70">Раздел в разработке.</p>
-        </div>
-      </section>
-
-      {/* ===== УСЛУГИ ===== */}
-      <section
-        id="services"
-        className="relative z-10 scroll-mt-20 bg-black/80 backdrop-blur-sm"
-      >
-        <div className="mx-auto max-w-7xl px-6 py-20">
-          <div className="mb-10 flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-white sm:text-3xl">Услуги</h2>
-              <p className="mt-1 text-sm text-white/50">
-                Цифровые сервисы и решения для финансового сектора
-              </p>
-            </div>
-            <span className="hidden h-1 w-16 rounded-full bg-nbk-gold sm:block" />
-          </div>
-          <p className="text-white/70">Раздел в разработке.</p>
-        </div>
-      </section>
-
-      {/* ===== ПРОЕКТЫ ===== */}
-      <section
-        id="projects"
-        className="relative z-10 scroll-mt-20 bg-black/80 backdrop-blur-sm"
-      >
-        <div className="mx-auto max-w-7xl px-6 py-20">
-          <div className="mb-10 flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-white sm:text-3xl">Проекты</h2>
-              <p className="mt-1 text-sm text-white/50">
-                Ключевые инициативы цифрового развития
-              </p>
-            </div>
-            <span className="hidden h-1 w-16 rounded-full bg-nbk-gold sm:block" />
-          </div>
-          <p className="text-white/70">Раздел в разработке.</p>
-        </div>
-      </section>
-
-      {/* ===== МИССИЯ ===== */}
-      <section
-        id="mission"
-        className="relative z-10 scroll-mt-20 bg-black/80 backdrop-blur-sm"
-      >
-        <div className="mx-auto max-w-7xl px-6 py-20">
-          <div className="mb-10 flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-white sm:text-3xl">Миссия</h2>
-              <p className="mt-1 text-sm text-white/50">
-                Технологическое лидерство и доверие в финансах
-              </p>
-            </div>
-            <span className="hidden h-1 w-16 rounded-full bg-nbk-gold sm:block" />
-          </div>
-          <p className="text-white/70">Раздел в разработке.</p>
-        </div>
-      </section>
-
-      {/* ===== НОВОСТИ ===== */}
+      {/* ===== НОВОСТИ (первой после Hero) ===== */}
       <section
         id="news"
         className="relative z-10 scroll-mt-20 bg-black/80 backdrop-blur-sm"
@@ -213,6 +142,45 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ===== О НАС ===== */}
+      <AboutSection />
+
+      {/* ===== СТАТИСТИКА ===== */}
+      <StatsSection />
+
+      {/* ===== УСЛУГИ ===== */}
+      <ServicesSection />
+
+      {/* ===== ПРОЕКТЫ ===== */}
+      <section
+        id="projects"
+        className="relative z-10 scroll-mt-20 bg-black/80 backdrop-blur-sm"
+      >
+        <div className="mx-auto max-w-7xl px-6 py-20">
+          <div className="mb-10 flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-white sm:text-3xl">Проекты</h2>
+              <p className="mt-1 text-sm text-white/50">
+                Ключевые инициативы цифрового развития
+              </p>
+            </div>
+            <span className="hidden h-1 w-16 rounded-full bg-nbk-gold sm:block" />
+          </div>
+          <p className="max-w-3xl leading-relaxed text-white/70">
+            Флагманский проект Центра — единый портал закупок Национального Банка,
+            переведший закупочные процедуры регулятора в прозрачную цифровую среду.
+            Параллельно развиваются системы обработки данных, информационной
+            безопасности и сервисы пользовательской поддержки.
+          </p>
+        </div>
+      </section>
+
+      {/* ===== МИССИЯ ===== */}
+      <MissionSection />
+
+      {/* ===== КОНСУЛЬТАЦИЯ (форма обратной связи) ===== */}
+      <ConsultSection />
+
       {/* ===== КОНТАКТЫ / ФУТЕР ===== */}
       <footer
         id="contacts"
@@ -228,7 +196,21 @@ export default function Home() {
             </div>
             <span className="hidden h-1 w-16 rounded-full bg-nbk-gold sm:block" />
           </div>
-          <p className="text-white/70">Раздел в разработке.</p>
+
+          <div className="grid gap-6 text-sm sm:grid-cols-3">
+            <div>
+              <dt className="font-semibold tracking-wide text-nbk-gold">Контакт-центр</dt>
+              <dd className="mt-1 text-white/70">1477 — круглосуточно</dd>
+            </div>
+            <div>
+              <dt className="font-semibold tracking-wide text-nbk-gold">Расположение</dt>
+              <dd className="mt-1 text-white/70">г. Алматы, Национальный Банк РК</dd>
+            </div>
+            <div>
+              <dt className="font-semibold tracking-wide text-nbk-gold">Закупки</dt>
+              <dd className="mt-1 text-white/70">Через единый портал закупок</dd>
+            </div>
+          </div>
 
           <div className="mt-12 border-t border-white/10 pt-6 text-sm text-white/40">
             © {new Date().getFullYear()} Digital Development Center — National Bank

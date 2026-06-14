@@ -332,7 +332,7 @@ export default class IntroScene {
         blending: THREE.NormalBlending, depthWrite: false, opacity: 0.95
       })
       const s = new THREE.Sprite(mat)
-      s.scale.set(1.1, 1.1, 1)
+      s.scale.set(1.65, 1.65, 1) // средний размер: символ ясно читается, но не громоздкий
       s.position.z = -3
       s.visible = false
       s.userData = { active: false }
