@@ -32,8 +32,11 @@ function pointInPolygon(x, y, poly) {
 }
 
 export default class IntroScene {
-  constructor(container) {
+  constructor(container, options = {}) {
     this.container = container
+
+    // колбэк, вызывается при входе в новую фазу (передаётся номер фазы)
+    this.onPhaseComplete = options.onPhaseComplete || null
 
     // состояние сцены
     this.svgScale = 1
@@ -388,12 +391,9 @@ export default class IntroScene {
     this.phaseStart = performance.now()
     if (this.phase === 1) { this.currentTarget = this.targetExplode; this.lerpSpeed = 0.06 }
     if (this.phase === 2) { this.currentTarget = this.targetMap;     this.lerpSpeed = 0.035 }
-    if (this.phase === 4) { this.showTexts() }
-  }
 
-  showTexts() {
-    const overlay = document.getElementById('intro-texts')
-    if (overlay) overlay.classList.add('visible')
+    // уведомить подписчика о смене фазы (в т.ч. о финальной фазе 4 — за тексты отвечает React)
+    if (this.onPhaseComplete) this.onPhaseComplete(this.phase)
   }
 
   // =====================
@@ -490,6 +490,7 @@ export default class IntroScene {
   // =====================
   dispose() {
     this.disposed = true
+    this.onPhaseComplete = null
 
     // отмена цикла анимации
     if (this.rafId !== null) {

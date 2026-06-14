@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+  background: theme('colors.ink.DEFAULT');
+  color: #e8ecf5;
+  font-family: theme('fontFamily.sans');
+}
+
+#app {
+  min-height: 100vh;
+}
