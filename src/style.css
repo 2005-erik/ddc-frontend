@@ -1,0 +1,45 @@
+html,
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+canvas {
+  display: block;
+}
+
+/* ОВЕРЛЕЙ ТЕКСТОВ ИНТРО */
+#intro-texts {
+  position: fixed;
+  left: 50%;
+  bottom: 12%;
+  transform: translateX(-50%) translateY(20px);
+  text-align: center;
+  color: #ffd700;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  opacity: 0;
+  transition: opacity 1.2s ease, transform 1.2s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#intro-texts.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+#intro-texts h1 {
+  font-size: 2.4rem;
+  margin: 0 0 0.3rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+#intro-texts p {
+  font-size: 1.1rem;
+  margin: 0;
+  opacity: 0.8;
+  letter-spacing: 0.02em;
+}
