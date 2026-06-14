@@ -67,7 +67,7 @@ export default function Header() {
         </Link>
 
         {/* Навигация (десктоп) */}
-        <nav className="hidden items-center gap-7 lg:flex">
+        <nav className="hidden items-center gap-7 md:flex">
           {navLinks.map((l) => (
             <NavLink key={l.to} to={l.to} end={l.end} className={navClass}>
               {l.label}
@@ -76,7 +76,7 @@ export default function Header() {
         </nav>
 
         {/* Языки + портал (десктоп) */}
-        <div className="hidden items-center gap-4 lg:flex">
+        <div className="hidden items-center gap-4 md:flex">
           {LangSwitcher}
           {ProcurementBtn}
         </div>
@@ -87,7 +87,7 @@ export default function Header() {
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Меню"
           aria-expanded={menuOpen}
-          className="flex h-9 w-9 flex-col items-center justify-center gap-1.5 rounded-md border border-white/15 lg:hidden"
+          className="flex h-9 w-9 flex-col items-center justify-center gap-1.5 rounded-md border border-white/15 md:hidden"
         >
           <span
             className={`h-0.5 w-5 bg-white transition-transform ${menuOpen ? 'translate-y-2 rotate-45' : ''}`}
@@ -101,7 +101,7 @@ export default function Header() {
 
       {/* Выпадающее меню (мобильный) */}
       {menuOpen && (
-        <div className="border-t border-white/10 bg-ink/70 backdrop-blur-md lg:hidden">
+        <div className="border-t border-white/10 bg-ink/70 backdrop-blur-md md:hidden">
           <nav className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-5">
             {navLinks.map((l) => (
               <NavLink
