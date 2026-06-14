@@ -1,12 +1,13 @@
-import { useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 
+// Single-page: ссылки ведут к секциям на главной (плавный скролл, без смены URL).
+// id: null — скролл наверх (Hero).
 const navLinks = [
-  { to: '/', label: 'Главная', end: true },
-  { to: '/about', label: 'О нас' },
-  { to: '/services', label: 'Услуги' },
-  { to: '/mission', label: 'Миссия' },
-  { to: '/contacts', label: 'Контакты' },
+  { id: null, label: 'Главная' },
+  { id: 'about', label: 'О нас' },
+  { id: 'services', label: 'Услуги' },
+  { id: 'mission', label: 'Миссия' },
+  { id: 'contacts', label: 'Контакты' },
 ]
 
 const languages = ['KZ', 'RU', 'EN']
@@ -14,7 +15,7 @@ const languages = ['KZ', 'RU', 'EN']
 // TODO: заменить на реальный URL портала закупок НБРК
 const PROCUREMENT_URL = '#'
 
-function navClass({ isActive }) {
+function navClass(isActive) {
   return `relative pb-1 text-sm tracking-wide transition-colors hover:text-nbk-gold ${
     isActive
       ? 'text-nbk-gold after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-nbk-gold'
@@ -22,20 +23,54 @@ function navClass({ isActive }) {
   }`
 }
 
+function scrollToId(id) {
+  if (!id) {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    return
+  }
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
 export default function Header() {
   const [lang, setLang] = useState('RU')
   const [menuOpen, setMenuOpen] = useState(false)
+  const [active, setActive] = useState(null)
+
+  // Scroll-spy: подсвечиваем секцию, ближайшую к верху вьюпорта
+  useEffect(() => {
+    const ids = navLinks.map((l) => l.id).filter(Boolean)
+    const onScroll = () => {
+      if (window.scrollY < 80) {
+        setActive(null)
+        return
+      }
+      let current = null
+      for (const id of ids) {
+        const el = document.getElementById(id)
+        if (el && el.getBoundingClientRect().top <= 120) current = id
+      }
+      setActive(current)
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const handleNav = (id) => {
+    setMenuOpen(false)
+    scrollToId(id)
+  }
 
   const LangSwitcher = (
-    <div className="flex items-center gap-1 rounded-full border border-white/15 bg-ink/30 p-0.5 backdrop-blur-sm">
+    <div className="flex items-center gap-0.5 rounded-lg border border-white/15 bg-ink/30 p-0.5 backdrop-blur-sm">
       {languages.map((code) => (
         <button
           key={code}
           type="button"
           onClick={() => setLang(code)}
           aria-pressed={lang === code}
-          className={`rounded-full px-2.5 py-1 text-xs font-medium tracking-wide transition-colors ${
-            lang === code ? 'bg-ddc-blue text-white' : 'text-white/60 hover:text-white'
+          className={`rounded-md px-2 py-0.5 text-[11px] font-medium tracking-wide transition-colors ${
+            lang === code ? 'bg-ddc-blue text-white' : 'text-white/55 hover:text-white'
           }`}
         >
           {code}
@@ -47,36 +82,45 @@ export default function Header() {
   const ProcurementBtn = (
     <a
       href={PROCUREMENT_URL}
-      className="rounded-full bg-nbk-gold px-4 py-2 text-xs font-semibold tracking-wide text-ink shadow-[0_0_18px_rgba(255,215,0,0.25)] transition hover:bg-nbk-gold-soft"
+      className="whitespace-nowrap rounded-lg bg-nbk-gold px-3 py-1.5 text-xs font-semibold tracking-wide text-ink shadow-[0_0_14px_rgba(255,215,0,0.2)] transition hover:bg-nbk-gold-soft"
     >
-      Портал закупок НБРК
+      Портал закупок
     </a>
   )
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-ink/40 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-3">
-        {/* Логотип */}
-        <Link to="/" className="group flex flex-col leading-tight" onClick={() => setMenuOpen(false)}>
-          <span className="text-sm font-bold tracking-[0.18em] text-white transition-colors group-hover:text-nbk-gold sm:text-base">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
+        {/* Логотип — скролл наверх */}
+        <button
+          type="button"
+          onClick={() => handleNav(null)}
+          className="group flex flex-col items-start leading-tight"
+        >
+          <span className="whitespace-nowrap font-mono text-[11px] font-bold tracking-[0.14em] text-white transition-colors group-hover:text-nbk-gold sm:text-xs lg:text-sm">
             DIGITAL DEVELOPMENT CENTER
           </span>
-          <span className="text-[10px] tracking-[0.12em] text-white/55 sm:text-xs">
+          <span className="hidden whitespace-nowrap text-[9px] tracking-[0.1em] text-white/50 lg:block">
             National Bank of Kazakhstan
           </span>
-        </Link>
+        </button>
 
-        {/* Навигация (десктоп) */}
-        <nav className="hidden items-center gap-7 md:flex">
+        {/* Навигация (десктоп / средний экран) */}
+        <nav className="hidden items-center gap-5 md:flex lg:gap-7">
           {navLinks.map((l) => (
-            <NavLink key={l.to} to={l.to} end={l.end} className={navClass}>
+            <button
+              key={l.label}
+              type="button"
+              onClick={() => handleNav(l.id)}
+              className={navClass(active === l.id)}
+            >
               {l.label}
-            </NavLink>
+            </button>
           ))}
         </nav>
 
-        {/* Языки + портал (десктоп) */}
-        <div className="hidden items-center gap-4 md:flex">
+        {/* Языки + портал (десктоп / средний экран) */}
+        <div className="hidden items-center gap-2 md:flex lg:gap-3">
           {LangSwitcher}
           {ProcurementBtn}
         </div>
@@ -102,19 +146,18 @@ export default function Header() {
       {/* Выпадающее меню (мобильный) */}
       {menuOpen && (
         <div className="border-t border-white/10 bg-ink/70 backdrop-blur-md md:hidden">
-          <nav className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-5">
+          <nav className="mx-auto flex max-w-7xl flex-col items-start gap-4 px-6 py-5">
             {navLinks.map((l) => (
-              <NavLink
-                key={l.to}
-                to={l.to}
-                end={l.end}
-                onClick={() => setMenuOpen(false)}
-                className={navClass}
+              <button
+                key={l.label}
+                type="button"
+                onClick={() => handleNav(l.id)}
+                className={navClass(active === l.id)}
               >
                 {l.label}
-              </NavLink>
+              </button>
             ))}
-            <div className="flex items-center justify-between gap-4 pt-2">
+            <div className="flex w-full items-center justify-between gap-4 pt-2">
               {LangSwitcher}
               {ProcurementBtn}
             </div>

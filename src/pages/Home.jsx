@@ -1,14 +1,18 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
 import IntroScene from '../components/IntroScene.jsx'
 import NewsCarousel from '../components/NewsCarousel.jsx'
 import { fetchNews } from '../api/news.js'
 
-const links = [
-  { to: '/about', label: 'О нас' },
-  { to: '/services', label: 'Услуги' },
-  { to: '/projects', label: 'Проекты' },
+// Кнопки в Hero: плавный скролл к секциям (без перехода на новый URL)
+const heroLinks = [
+  { id: 'about', label: 'О нас' },
+  { id: 'services', label: 'Услуги' },
+  { id: 'projects', label: 'Проекты' },
 ]
+
+function scrollToId(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 export default function Home() {
   const [introDone, setIntroDone] = useState(false)
@@ -18,7 +22,6 @@ export default function Home() {
   const [newsLoading, setNewsLoading] = useState(true)
 
   // индикатор скролла: прячем, как только пользователь начал скроллить
-  const newsRef = useRef(null)
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -27,9 +30,6 @@ export default function Home() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
-
-  const scrollToNews = () =>
-    newsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
   useEffect(() => {
     let active = true
@@ -57,7 +57,7 @@ export default function Home() {
         aria-hidden="true"
       />
 
-      {/* Hero-контент поверх сцены (z-10), без непрозрачного фона */}
+      {/* ===== HERO (прозрачный, частицы видны) ===== */}
       <main className="relative z-10 flex min-h-screen flex-col items-center justify-end gap-8 px-6 pb-[12vh] text-center">
         <div
           className={`transition-all duration-1000 ease-out ${
@@ -77,22 +77,23 @@ export default function Home() {
             introDone ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0'
           }`}
         >
-          {links.map((l) => (
-            <Link
-              key={l.to}
-              to={l.to}
+          {heroLinks.map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              onClick={() => scrollToId(l.id)}
               className="rounded-full border border-ddc-blue/60 px-5 py-2 text-sm text-white/90 backdrop-blur-sm transition hover:border-nbk-gold hover:text-nbk-gold"
             >
               {l.label}
-            </Link>
+            </button>
           ))}
         </nav>
 
         {/* Индикатор скролла: пульсирующий шеврон, скрывается при скролле */}
         <button
           type="button"
-          onClick={scrollToNews}
-          aria-label="Прокрутить к новостям"
+          onClick={() => scrollToId('about')}
+          aria-label="Прокрутить вниз"
           className={`absolute bottom-6 left-1/2 -translate-x-1/2 text-nbk-gold/60 transition-opacity duration-700 hover:text-nbk-gold ${
             introDone && !scrolled ? 'opacity-100' : 'pointer-events-none opacity-0'
           }`}
@@ -112,8 +113,87 @@ export default function Home() {
         </button>
       </main>
 
-      {/* Новости — затемнённая подложка отделяет секцию от анимации-частиц сверху */}
-      <section ref={newsRef} className="relative z-10 bg-black/80 backdrop-blur-sm">
+      {/* ===== О НАС ===== */}
+      <section
+        id="about"
+        className="relative z-10 scroll-mt-20 bg-black/80 backdrop-blur-sm"
+      >
+        <div className="mx-auto max-w-7xl px-6 py-20">
+          <div className="mb-10 flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-white sm:text-3xl">О нас</h2>
+              <p className="mt-1 text-sm text-white/50">
+                Центр цифрового развития Национального Банка Казахстана
+              </p>
+            </div>
+            <span className="hidden h-1 w-16 rounded-full bg-nbk-gold sm:block" />
+          </div>
+          <p className="text-white/70">Раздел в разработке.</p>
+        </div>
+      </section>
+
+      {/* ===== УСЛУГИ ===== */}
+      <section
+        id="services"
+        className="relative z-10 scroll-mt-20 bg-black/80 backdrop-blur-sm"
+      >
+        <div className="mx-auto max-w-7xl px-6 py-20">
+          <div className="mb-10 flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-white sm:text-3xl">Услуги</h2>
+              <p className="mt-1 text-sm text-white/50">
+                Цифровые сервисы и решения для финансового сектора
+              </p>
+            </div>
+            <span className="hidden h-1 w-16 rounded-full bg-nbk-gold sm:block" />
+          </div>
+          <p className="text-white/70">Раздел в разработке.</p>
+        </div>
+      </section>
+
+      {/* ===== ПРОЕКТЫ ===== */}
+      <section
+        id="projects"
+        className="relative z-10 scroll-mt-20 bg-black/80 backdrop-blur-sm"
+      >
+        <div className="mx-auto max-w-7xl px-6 py-20">
+          <div className="mb-10 flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-white sm:text-3xl">Проекты</h2>
+              <p className="mt-1 text-sm text-white/50">
+                Ключевые инициативы цифрового развития
+              </p>
+            </div>
+            <span className="hidden h-1 w-16 rounded-full bg-nbk-gold sm:block" />
+          </div>
+          <p className="text-white/70">Раздел в разработке.</p>
+        </div>
+      </section>
+
+      {/* ===== МИССИЯ ===== */}
+      <section
+        id="mission"
+        className="relative z-10 scroll-mt-20 bg-black/80 backdrop-blur-sm"
+      >
+        <div className="mx-auto max-w-7xl px-6 py-20">
+          <div className="mb-10 flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-white sm:text-3xl">Миссия</h2>
+              <p className="mt-1 text-sm text-white/50">
+                Технологическое лидерство и доверие в финансах
+              </p>
+            </div>
+            <span className="hidden h-1 w-16 rounded-full bg-nbk-gold sm:block" />
+          </div>
+          <p className="text-white/70">Раздел в разработке.</p>
+        </div>
+      </section>
+
+      {/* ===== НОВОСТИ ===== */}
+      <section
+        id="news"
+        className="relative z-10 scroll-mt-20 bg-black/80 backdrop-blur-sm"
+      >
         <div className="mx-auto max-w-7xl px-6 py-20">
           <div className="mb-10 flex items-end justify-between gap-4">
             <div>
@@ -132,6 +212,30 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* ===== КОНТАКТЫ / ФУТЕР ===== */}
+      <footer
+        id="contacts"
+        className="relative z-10 scroll-mt-20 border-t border-white/10 bg-ink/90 backdrop-blur-sm"
+      >
+        <div className="mx-auto max-w-7xl px-6 py-16">
+          <div className="mb-10 flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-white sm:text-3xl">Контакты</h2>
+              <p className="mt-1 text-sm text-white/50">
+                Свяжитесь с Центром цифрового развития
+              </p>
+            </div>
+            <span className="hidden h-1 w-16 rounded-full bg-nbk-gold sm:block" />
+          </div>
+          <p className="text-white/70">Раздел в разработке.</p>
+
+          <div className="mt-12 border-t border-white/10 pt-6 text-sm text-white/40">
+            © {new Date().getFullYear()} Digital Development Center — National Bank
+            of Kazakhstan
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

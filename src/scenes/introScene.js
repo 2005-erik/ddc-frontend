@@ -13,7 +13,9 @@ const GOLD = new THREE.Color('#FFD700')
 
 const worldWidth = 30
 const bgCount = 600
-const COIN_POOL = 70
+const GLYPH_POOL = 70
+const GLYPH_TYPES = ['tenge', 'lock', 'node', 'chip']
+const TRAIL_COLOR = '#9DB8E0' // холодный серебристо-голубой хвост (под цвет глифов)
 const TRAIL_MAX = 1200
 
 // =====================
@@ -52,11 +54,11 @@ export default class IntroScene {
     this.lerpSpeed = 0.04
     this.PHASE_DURATION = { 0: 2200, 1: 1600, 2: 3000, 3: 1800, 4: 99999 }
 
-    // монеты / хвост
-    this.coins = []
-    this.coinTexture = null
+    // падающие глифы / хвост
+    this.glyphs = []
+    this.glyphTextures = []
     this.tengeSprite = null
-    this.lastCoinSpawn = 0
+    this.lastGlyphSpawn = 0
 
     // служебное
     this.rafId = null
@@ -153,7 +155,7 @@ export default class IntroScene {
     this.currentTarget = this.targetOrigin
 
     // =====================
-    // КОМЕТНЫЙ ХВОСТ МОНЕТ (затухающие точки)
+    // КОМЕТНЫЙ ХВОСТ ГЛИФОВ (затухающие точки)
     // =====================
     this.trailPos = new Float32Array(TRAIL_MAX * 3)
     this.trailAlpha = new Float32Array(TRAIL_MAX)
@@ -167,7 +169,7 @@ export default class IntroScene {
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: { uColor: { value: new THREE.Color('#FFD24A') } },
+      uniforms: { uColor: { value: new THREE.Color(TRAIL_COLOR) } },
       vertexShader: `
         attribute float alpha;
         varying float vAlpha;
@@ -231,49 +233,124 @@ export default class IntroScene {
   }
 
   // =====================
-  // КРУГЛЫЕ МОНЕТЫ ₸
+  // ГЛИФЫ (серебристо-голубые, 4 типа)
   // =====================
-  makeCoinTexture() {
+  // Общий радиальный градиент: светлое серебро → DDC-синий → тёмный
+  _glyphGradient(ctx) {
+    const g = ctx.createRadialGradient(98, 98, 18, 128, 128, 150)
+    g.addColorStop(0, '#E8EEF5')   // светлое серебро
+    g.addColorStop(0.55, '#5B8FD9') // холодный голубой (DDC-синий)
+    g.addColorStop(1, '#1B2A4A')   // тёмный
+    return g
+  }
+
+  makeGlyphTexture(type) {
     const c = document.createElement('canvas')
-    c.width = c.height = 128
+    c.width = c.height = 256
     const ctx = c.getContext('2d')
-    const grad = ctx.createRadialGradient(54, 54, 10, 64, 64, 60)
-    grad.addColorStop(0, '#FFE98A')
-    grad.addColorStop(0.7, '#E8B43A')
-    grad.addColorStop(1, '#9C6F1A')
-    ctx.fillStyle = grad
-    ctx.beginPath(); ctx.arc(64, 64, 58, 0, Math.PI * 2); ctx.fill()
-    ctx.lineWidth = 5; ctx.strokeStyle = '#FFF2B0'
-    ctx.beginPath(); ctx.arc(64, 64, 56, 0, Math.PI * 2); ctx.stroke()
-    ctx.fillStyle = '#5A3D08'
-    ctx.font = 'bold 72px Georgia, serif'
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-    ctx.fillText('₸', 64, 70)
+    const fill = this._glyphGradient(ctx)
+    const stroke = '#DCE6F5'      // светлый серебристый контур
+    const dark = '#15233F'        // тёмные «вырезы»
+    ctx.lineJoin = 'round'
+    ctx.lineCap = 'round'
+
+    if (type === 'tenge') {
+      ctx.fillStyle = fill
+      ctx.strokeStyle = stroke
+      ctx.lineWidth = 9
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.font = 'bold 185px Georgia, serif'
+      ctx.fillText('₸', 128, 134)
+      ctx.strokeText('₸', 128, 134)
+    } else if (type === 'lock') {
+      // дужка замка
+      ctx.strokeStyle = stroke
+      ctx.lineWidth = 16
+      ctx.beginPath(); ctx.arc(128, 104, 34, Math.PI, Math.PI * 2); ctx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(94, 104); ctx.lineTo(94, 122)
+      ctx.moveTo(162, 104); ctx.lineTo(162, 122)
+      ctx.stroke()
+      // тело замка
+      ctx.fillStyle = fill
+      ctx.strokeStyle = stroke
+      ctx.lineWidth = 8
+      ctx.beginPath(); ctx.roundRect(70, 118, 116, 84, 16); ctx.fill(); ctx.stroke()
+      // замочная скважина
+      ctx.fillStyle = dark
+      ctx.beginPath(); ctx.arc(128, 150, 12, 0, Math.PI * 2); ctx.fill()
+      ctx.fillRect(123, 152, 10, 30)
+    } else if (type === 'node') {
+      // граф: центральный узел + 4 спутника с линиями
+      const cx = 128, cy = 128, R = 76
+      const sats = []
+      for (let k = 0; k < 4; k++) {
+        const a = -Math.PI / 2 + k * (Math.PI / 2) + 0.5
+        sats.push({ x: cx + Math.cos(a) * R, y: cy + Math.sin(a) * R })
+      }
+      ctx.strokeStyle = stroke
+      ctx.lineWidth = 7
+      sats.forEach((s) => { ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(s.x, s.y); ctx.stroke() })
+      ctx.fillStyle = fill
+      sats.forEach((s) => {
+        ctx.beginPath(); ctx.arc(s.x, s.y, 16, 0, Math.PI * 2); ctx.fill(); ctx.stroke()
+      })
+      ctx.lineWidth = 6
+      ctx.beginPath(); ctx.arc(cx, cy, 32, 0, Math.PI * 2); ctx.fill(); ctx.stroke()
+    } else if (type === 'chip') {
+      // микрочип: квадрат с ножками и внутренним узором
+      const pins = [96, 128, 160]
+      ctx.strokeStyle = stroke
+      ctx.lineWidth = 8
+      pins.forEach((p) => {
+        ctx.beginPath(); ctx.moveTo(p, 78); ctx.lineTo(p, 56); ctx.stroke()   // верх
+        ctx.beginPath(); ctx.moveTo(p, 178); ctx.lineTo(p, 200); ctx.stroke() // низ
+        ctx.beginPath(); ctx.moveTo(78, p); ctx.lineTo(56, p); ctx.stroke()   // лево
+        ctx.beginPath(); ctx.moveTo(178, p); ctx.lineTo(200, p); ctx.stroke() // право
+      })
+      ctx.fillStyle = fill
+      ctx.beginPath(); ctx.roundRect(78, 78, 100, 100, 14); ctx.fill(); ctx.stroke()
+      // внутренний узор
+      ctx.strokeStyle = stroke
+      ctx.lineWidth = 5
+      ctx.beginPath(); ctx.roundRect(104, 104, 48, 48, 8); ctx.stroke()
+      ctx.fillStyle = dark
+      ctx.beginPath(); ctx.arc(128, 128, 8, 0, Math.PI * 2); ctx.fill()
+    }
+
     return new THREE.CanvasTexture(c)
   }
 
-  initCoins() {
-    this.coinTexture = this.makeCoinTexture()
-    for (let i = 0; i < COIN_POOL; i++) {
+  initGlyphs() {
+    // 4 текстуры создаём один раз
+    this.glyphTextures = GLYPH_TYPES.map((t) => this.makeGlyphTexture(t))
+
+    for (let i = 0; i < GLYPH_POOL; i++) {
       const mat = new THREE.SpriteMaterial({
-        map: this.coinTexture, transparent: true,
+        map: this.glyphTextures[0], transparent: true,
         blending: THREE.NormalBlending, depthWrite: false, opacity: 0.95
       })
       const s = new THREE.Sprite(mat)
-      s.scale.set(0.7, 0.7, 1)
+      s.scale.set(1.1, 1.1, 1)
       s.position.z = -3
       s.visible = false
       s.userData = { active: false }
       this.scene.add(s)
-      this.coins.push(s)
+      this.glyphs.push(s)
     }
   }
 
-  spawnCoin() {
-    const free = this.coins.find((c) => !c.userData.active)
+  spawnGlyph() {
+    const free = this.glyphs.find((g) => !g.userData.active)
     if (!free) return
 
-    // по всей ширине — глубина (z=-3) спрячет монеты за картой
+    // случайный глиф из четырёх для каждого нового объекта
+    const tex = this.glyphTextures[(Math.random() * this.glyphTextures.length) | 0]
+    free.material.map = tex
+    free.material.needsUpdate = true
+
+    // по всей ширине — глубина (z=-3) спрячет глифы за картой
     const x = (Math.random() - 0.5) * 80
 
     free.position.set(x, 20 + Math.random() * 4, -3)
@@ -284,13 +361,13 @@ export default class IntroScene {
     free.visible = true
   }
 
-  updateCoins() {
-    for (const c of this.coins) {
-      if (!c.userData.active) continue
-      c.position.y -= c.userData.vy          // прямое падение
-      c.material.rotation += c.userData.spin
-      this.spawnTrail(c.position.x, c.position.y) // кометный след
-      if (c.position.y < -28) { c.userData.active = false; c.visible = false }
+  updateGlyphs() {
+    for (const g of this.glyphs) {
+      if (!g.userData.active) continue
+      g.position.y -= g.userData.vy          // прямое падение
+      g.material.rotation += g.userData.spin
+      this.spawnTrail(g.position.x, g.position.y) // кометный след
+      if (g.position.y < -28) { g.userData.active = false; g.visible = false }
     }
   }
 
@@ -370,7 +447,7 @@ export default class IntroScene {
       this.mapBBox = { minX: Math.min(c1.x, c2.x), maxX: Math.max(c1.x, c2.x) }
 
       this.tengeSprite = this.makeTengeSprite()
-      this.initCoins()
+      this.initGlyphs()
       this.mapReady = true
 
       this.startTimeline()
@@ -454,10 +531,10 @@ export default class IntroScene {
       }
     }
 
-    // дождь монет — ТОЛЬКО в финале
+    // дождь глифов — ТОЛЬКО в финале
     if (this.mapReady && this.phase >= 4) {
-      if (now - this.lastCoinSpawn > 220) { this.spawnCoin(); this.lastCoinSpawn = now }
-      this.updateCoins()
+      if (now - this.lastGlyphSpawn > 220) { this.spawnGlyph(); this.lastGlyphSpawn = now }
+      this.updateGlyphs()
       this.updateTrail()
     }
 
@@ -501,13 +578,14 @@ export default class IntroScene {
     // снятие слушателей
     window.removeEventListener('resize', this._onResize)
 
-    // монеты: материалы + общая текстура
-    for (const c of this.coins) {
-      if (c.material) c.material.dispose()
-      this.scene.remove(c)
+    // глифы: материалы + общие текстуры
+    for (const g of this.glyphs) {
+      if (g.material) g.material.dispose()
+      this.scene.remove(g)
     }
-    this.coins = []
-    if (this.coinTexture) { this.coinTexture.dispose(); this.coinTexture = null }
+    this.glyphs = []
+    for (const tex of this.glyphTextures) tex.dispose()
+    this.glyphTextures = []
 
     // большой тенге: текстура + материал
     if (this.tengeSprite) {
