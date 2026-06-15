@@ -1,9 +1,10 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import Header from './components/Header.jsx'
 import IntroScene from './components/IntroScene.jsx'
 import ChatWidget from './components/ChatWidget.jsx'
 import { IntroProvider, useIntro } from './scenes/IntroContext.jsx'
 import Home from './pages/Home.jsx'
+import AdminApp from './pages/admin/AdminApp.jsx'
 
 function Background() {
   const { setIntroDone } = useIntro()
@@ -11,18 +12,27 @@ function Background() {
 }
 
 export default function App() {
+  const location = useLocation()
+  // Админка — служебный раздел: без 3D-фона, шапки сайта и чат-бота.
+  const isAdmin = location.pathname.startsWith('/admin')
+
   return (
     <IntroProvider>
-      {/* Фон-сцена живёт вне Routes — монтируется один раз, не рестартится при переходах */}
-      <Background />
+      {!isAdmin && (
+        <>
+          {/* Фон-сцена живёт вне Routes — монтируется один раз, не рестартится при переходах */}
+          <Background />
+          <Header />
+        </>
+      )}
 
-      <Header />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/admin/*" element={<AdminApp />} />
       </Routes>
 
-      {/* Плавающий чат-бот — вне Routes, виден на всех экранах */}
-      <ChatWidget />
+      {/* Плавающий чат-бот — на публичных экранах, не в админке */}
+      {!isAdmin && <ChatWidget />}
     </IntroProvider>
   )
 }

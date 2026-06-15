@@ -27,7 +27,12 @@
       "Bash(echo \"---exit:$?---\")",
       "Bash(echo \"---grep exit:$?---\")",
       "Bash(node *)",
-      "Bash(git mv *)"
+      "Bash(git mv *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/api/admin/requests)",
+      "Bash(curl -s -w \"\\\\n-> %{http_code}\\\\n\" -X POST http://localhost:3000/api/admin/login -H 'Content-Type: application/json' -d '{\"username\":\"nope\",\"password\":\"nope\"}')",
+      "Bash(lsof -nP -iTCP:5432 -sTCP:LISTEN)",
+      "Bash(lsof -nP -iTCP:3000 -sTCP:LISTEN)",
+      "Bash(pkill -f 'node server.js')"
     ]
   }
 }
