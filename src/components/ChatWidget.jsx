@@ -183,11 +183,13 @@ export default function ChatWidget() {
     const text = input.trim()
     if (!text || typing) return
 
+    // история до текущего сообщения — для контекста LLM на бэкенде
+    const history = messages
     setMessages((m) => [...m, { from: 'user', text }])
     setInput('')
     setTyping(true)
     try {
-      const reply = await sendMessage(text)
+      const reply = await sendMessage(text, history)
       setMessages((m) => [...m, { from: 'bot', text: reply }])
     } catch (err) {
       console.error('Ошибка чата', err)

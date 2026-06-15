@@ -21,7 +21,13 @@
       "Bash('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' --headless=new --disable-gpu --use-gl=swiftshader --enable-webgl --ignore-gpu-blocklist --window-size=1280,800 --hide-scrollbars --virtual-time-budget=12000 --screenshot=/tmp/ddc-intro-final.png http://localhost:5175/)",
       "Bash(echo \"exit:$?\")",
       "Bash(curl -s -o /dev/null -w \"home:%{http_code} kz.svg:\" http://localhost:5175/)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5175/kz.svg)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5175/kz.svg)",
+      "Bash(git reset *)",
+      "Bash(lsof -nP -iTCP -sTCP:LISTEN)",
+      "Bash(echo \"---exit:$?---\")",
+      "Bash(echo \"---grep exit:$?---\")",
+      "Bash(node *)",
+      "Bash(git mv *)"
     ]
   }
 }

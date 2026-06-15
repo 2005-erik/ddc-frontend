@@ -1,37 +1,35 @@
-import { faq } from '../data/faq.js'
+import { API } from './config.js'
 
 const FALLBACK =
-  'Передаю вопрос специалисту… Вы также можете оставить обращение через форму «Консультация» — мы свяжемся с вами.'
+  'Не удалось связаться с помощником. Попробуйте ещё раз или оставьте обращение через форму «Консультация» — мы свяжемся с вами.'
 
 /**
- * Отправить сообщение помощнику DDC.
+ * Отправить сообщение помощнику DDC (POST /api/chat).
  *
- * Гибрид на mock: ищем совпадение по ключевым словам в FAQ (src/data/faq.js).
- * Нашли — мгновенный ответ; не нашли — заглушка с переадресацией специалисту.
- * Небольшая задержка имитирует «печатает…».
+ * Backend сам решает: гибрид FAQ + Groq (Llama 4 Scout). Ключ модели держится
+ * на сервере и на фронт не попадает. Сюда возвращается готовый текст ответа.
  *
- * Позже здесь будет реальный бэкенд с ИИ — ключ модели держим на сервере, НЕ на фронте:
- *
- *   export async function sendMessage(text) {
- *     const res = await fetch('/api/chat', {
- *       method: 'POST',
- *       headers: { 'Content-Type': 'application/json' },
- *       body: JSON.stringify({ message: text }),
- *     })
- *     if (!res.ok) throw new Error(`Ошибка чата: ${res.status}`)
- *     const data = await res.json()
- *     return data.reply
- *   }
+ * При сетевом сбое/ошибке не бросаем — возвращаем понятную заглушку,
+ * чтобы чат не падал.
  *
  * @param {string} text сообщение пользователя
+ * @param {Array<{from: string, text: string}>} [history] предыдущие реплики для контекста
  * @returns {Promise<string>} ответ помощника
  */
-export async function sendMessage(text) {
-  await new Promise((resolve) => setTimeout(resolve, 500))
-
-  const q = text.toLowerCase()
-  const hit = faq.find((item) => item.keywords.some((k) => q.includes(k)))
-  return hit ? hit.answer : FALLBACK
+export async function sendMessage(text, history = []) {
+  try {
+    const res = await fetch(`${API}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, history }),
+    })
+    if (!res.ok) throw new Error(`Ошибка чата: ${res.status}`)
+    const data = await res.json()
+    return data.reply || FALLBACK
+  } catch (err) {
+    console.warn('[chat] backend недоступен:', err.message)
+    return FALLBACK
+  }
 }
 
 export default sendMessage

@@ -64,6 +64,11 @@ export default class IntroScene {
     this.rafId = null
     this.disposed = false
 
+    // прогресс скролла страницы (0 = верх, 1 = низ) и активная секция —
+    // инфраструктура для будущих scroll-анимаций (пока без визуальных эффектов)
+    this.scrollProgress = 0
+    this.activeSection = null
+
     // =====================
     // SCENE / CAMERA / RENDERER
     // =====================
@@ -540,7 +545,32 @@ export default class IntroScene {
 
     this.particles.rotation.y = (this.phase >= 2) ? Math.sin(now * 0.0002) * 0.1 : 0
 
+    // камера реагирует на скролл ТОЛЬКО после завершения интро (финальная фаза)
+    if (this.phase >= 4) {
+      const t = this.scrollProgress                 // 0 (верх) … 1 (низ)
+      const targetZ = 25 - t * 9                     // наезд: Z 25 → 16 (эффект погружения)
+      const targetY = -t * 2                         // камера лениво опускается: 0 → -2
+      // мягкий lerp — движение сглажено, даже если скроллят рывками
+      this.camera.position.z += (targetZ - this.camera.position.z) * 0.05
+      this.camera.position.y += (targetY - this.camera.position.y) * 0.05
+    }
+
     this.composer.render()
+  }
+
+  // =====================
+  // SCROLL-ИНФРАСТРУКТУРА (пока без визуальных эффектов)
+  // =====================
+  // t — прогресс скролла страницы, 0 (верх) … 1 (низ)
+  setScrollProgress(t) {
+    this.scrollProgress = t
+  }
+
+  // id активной секции (news/about/stats/services/projects/mission/consult/contacts)
+  setActiveSection(id) {
+    this.activeSection = id
+    // TODO(scroll-anim): здесь позже будет смена темы по секциям
+    console.log('section', id)
   }
 
   // =====================

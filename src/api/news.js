@@ -1,23 +1,40 @@
+import { API } from './config.js'
 import { mockNews } from '../data/mockNews.js'
 
 /**
- * Получить список новостей.
+ * Привести новость из API к форме, которую ждут компоненты:
+ * image_url → image, published_at → date.
+ */
+function normalize(n) {
+  return {
+    id: n.id,
+    title: n.title,
+    excerpt: n.excerpt,
+    body: n.body,
+    category: n.category,
+    image: n.image_url,
+    date: n.published_at,
+  }
+}
+
+/**
+ * Получить список новостей с backend (GET /api/news).
  *
- * Сейчас возвращает мок с имитацией сетевой задержки (400 мс).
- *
- * Чтобы переключиться на реальный бэкенд — замените тело на:
- *
- *   export async function fetchNews() {
- *     const res = await fetch('/api/news')
- *     if (!res.ok) throw new Error(`Не удалось загрузить новости: ${res.status}`)
- *     return res.json()
- *   }
+ * При недоступности бэкенда (сеть/ошибка ответа) возвращаем mock,
+ * чтобы страница не падала — лента всё равно отрисуется.
  *
  * @returns {Promise<Array>} массив новостей
  */
 export async function fetchNews() {
-  await new Promise((resolve) => setTimeout(resolve, 400))
-  return mockNews
+  try {
+    const res = await fetch(`${API}/api/news`)
+    if (!res.ok) throw new Error(`Не удалось загрузить новости: ${res.status}`)
+    const data = await res.json()
+    return data.map(normalize)
+  } catch (err) {
+    console.warn('[news] backend недоступен, показываю mock:', err.message)
+    return mockNews
+  }
 }
 
 export default fetchNews
