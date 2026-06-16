@@ -8,26 +8,40 @@ const STATUSES = [
   { value: 'done', label: 'Готово' },
 ]
 
-export default function RequestsSection({ onAuthError }) {
+// период автообновления списка заявок
+const POLL_MS = 25000
+
+export default function RequestsSection({ onAuthError, onRequestsChanged }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [savingId, setSavingId] = useState(null)
 
+  // Автообновление: загрузка сразу + опрос каждые 25 секунд, чтобы новые
+  // заявки появлялись без перезагрузки. Опрос «тихий» — без спиннера.
   useEffect(() => {
     let active = true
-    getRequests()
-      .then((data) => active && setRows(data))
-      .catch((err) => {
-        if (!active) return
-        onAuthError(err)
-        setError(err.message)
-      })
-      .finally(() => active && setLoading(false))
+    const load = () =>
+      getRequests()
+        .then((data) => {
+          if (!active) return
+          setRows(data)
+          setError('')
+        })
+        .catch((err) => {
+          if (!active) return
+          onAuthError(err)
+          setError(err.message)
+        })
+        .finally(() => active && setLoading(false))
+
+    load()
+    const id = setInterval(load, POLL_MS)
     return () => {
       active = false
+      clearInterval(id)
     }
-  }, [])
+  }, [onAuthError])
 
   async function changeStatus(id, status) {
     setSavingId(id)
@@ -35,6 +49,8 @@ export default function RequestsSection({ onAuthError }) {
     try {
       const updated = await updateRequestStatus(id, status)
       setRows((rs) => rs.map((r) => (r.id === id ? updated : r)))
+      // статус мог измениться с «новая» → обновляем бейдж в сайдбаре
+      onRequestsChanged?.()
     } catch (err) {
       onAuthError(err)
       setError(err.message)
@@ -68,9 +84,27 @@ export default function RequestsSection({ onAuthError }) {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-t border-white/5 align-top hover:bg-white/5">
+                <tr
+                  key={r.id}
+                  className={`border-t border-white/5 align-top transition-colors ${
+                    r.status === 'new'
+                      ? 'bg-nbk-gold/[0.06] hover:bg-nbk-gold/10'
+                      : 'hover:bg-white/5'
+                  }`}
+                >
                   <td className="whitespace-nowrap px-4 py-3 text-white/60">
-                    {formatDate(r.created_at)}
+                    <span className="inline-flex items-center gap-2">
+                      {/* золотая метка слева у новых заявок */}
+                      {r.status === 'new' && (
+                        <span
+                          className="h-2 w-2 shrink-0 rounded-full bg-nbk-gold"
+                          aria-label="новая"
+                        />
+                      )}
+                      <span className={r.status === 'new' ? 'text-white/90' : undefined}>
+                        {formatDate(r.created_at)}
+                      </span>
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-white/90">{r.type}</div>

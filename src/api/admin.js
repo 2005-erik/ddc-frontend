@@ -55,6 +55,8 @@ export async function login(username, password) {
 
 // ─── Заявки ───
 export const getRequests = () => authFetch('/requests')
+// Число новых заявок (для бейджа-уведомления) → { count }
+export const getNewRequestsCount = () => authFetch('/requests/new-count')
 export const updateRequestStatus = (id, status) =>
   authFetch(`/requests/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) })
 
