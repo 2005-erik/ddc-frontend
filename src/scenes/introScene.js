@@ -141,7 +141,7 @@ export default class IntroScene {
     this.bgGeo = new THREE.BufferGeometry()
     this.bgGeo.setAttribute('position', new THREE.BufferAttribute(this.bgPositions, 3))
     this.bgMat = new THREE.PointsMaterial({
-      color: 0x8899bb, size: 0.12, transparent: true, opacity: 0.5, depthWrite: false
+      color: 0x8899bb, size: 0.14, transparent: true, opacity: 0.5, depthWrite: false
     })
     this.bgPoints = new THREE.Points(this.bgGeo, this.bgMat)
     this.scene.add(this.bgPoints)
@@ -178,16 +178,39 @@ export default class IntroScene {
     this.geometry = new THREE.BufferGeometry()
     this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3))
 
-    this.material = new THREE.PointsMaterial({
+    this.mapMaterial = new THREE.PointsMaterial({
       color: GOLD, size: 0.02, transparent: true, opacity: 0,
       blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true
     })
 
-    this.particles = new THREE.Points(this.geometry, this.material)
-    this.scene.add(this.particles)
+    this.mapParticles = new THREE.Points(this.geometry, this.mapMaterial)
+    this.scene.add(this.mapParticles)
 
     // изначальная цель — ядро (как в исходнике до загрузки SVG)
     this.currentTarget = this.targetOrigin
+
+    // Шаг 4: целевые позиции форм по секциям (грид / решётка / граф / стрела).
+    // targetMap заполнится при загрузке SVG, ссылка стабильна.
+    this.buildSectionShapes()
+    this.sectionTargets = {
+      hero: this.targetMap,
+      news: this.targetMap,
+      about: this.targetMap,
+      stats: this.targetGrid,
+      services: this.targetLattice,
+      projects: this.targetGraph,
+      mission: this.targetArrow,
+      consult: this.targetMap,
+      contacts: this.targetMap,
+    }
+    // имена форм — только для отладочного лога
+    this._shapeName = new Map([
+      [this.targetMap, 'map'],
+      [this.targetGrid, 'grid'],
+      [this.targetLattice, 'lattice'],
+      [this.targetGraph, 'graph'],
+      [this.targetArrow, 'arrow'],
+    ])
 
     // =====================
     // КОМЕТНЫЙ ХВОСТ ГЛИФОВ (затухающие точки)
@@ -270,29 +293,26 @@ export default class IntroScene {
   // =====================
   // ГЛИФЫ (серебристо-голубые, 4 типа)
   // =====================
-  // Общий радиальный градиент: светлое серебро → DDC-синий → тёмный
-  _glyphGradient(ctx) {
-    const g = ctx.createRadialGradient(98, 98, 18, 128, 128, 150)
-    g.addColorStop(0, '#E8EEF5')   // светлое серебро
-    g.addColorStop(0.55, '#5B8FD9') // холодный голубой (DDC-синий)
-    g.addColorStop(1, '#1B2A4A')   // тёмный
-    return g
-  }
-
   makeGlyphTexture(type) {
+    // Высокое разрешение (512) + рисование в координатах 256 (scale 2×) → резкие края.
     const c = document.createElement('canvas')
-    c.width = c.height = 256
+    c.width = c.height = 512
     const ctx = c.getContext('2d')
-    const fill = this._glyphGradient(ctx)
-    const stroke = '#DCE6F5'      // светлый серебристый контур
-    const dark = '#15233F'        // тёмные «вырезы»
+    ctx.scale(2, 2)
+
+    // Рецепт чёткости как у центрального тенге: тёмное «тело» почти не светится
+    // в bloom и не расплывается в кляксу, а ЧЁТКИЙ серебристо-голубой контур
+    // задаёт ясную форму. Цвет — серебристо-голубой, как и раньше.
+    const fill = 'rgba(18, 28, 52, 0.55)' // тёмное тело (низкая яркость → меньше bloom)
+    const stroke = '#C3D6F2'              // светлый серебристо-голубой контур
+    const dark = '#0C1526'                // тёмные «вырезы»
     ctx.lineJoin = 'round'
     ctx.lineCap = 'round'
 
     if (type === 'tenge') {
       ctx.fillStyle = fill
       ctx.strokeStyle = stroke
-      ctx.lineWidth = 9
+      ctx.lineWidth = 10
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.font = 'bold 185px Georgia, serif'
@@ -334,27 +354,137 @@ export default class IntroScene {
       ctx.lineWidth = 6
       ctx.beginPath(); ctx.arc(cx, cy, 32, 0, Math.PI * 2); ctx.fill(); ctx.stroke()
     } else if (type === 'chip') {
-      // микрочип: квадрат с ножками и внутренним узором
-      const pins = [96, 128, 160]
+      // микрочип (IC): КВАДРАТНЫЙ корпус с ножками по всем сторонам + ядро.
+      // Углы почти прямые (радиус 4), чтобы не читался как кружка.
+      const pins = [100, 128, 156]
       ctx.strokeStyle = stroke
-      ctx.lineWidth = 8
+      ctx.lineCap = 'round'
+      ctx.lineWidth = 10
       pins.forEach((p) => {
-        ctx.beginPath(); ctx.moveTo(p, 78); ctx.lineTo(p, 56); ctx.stroke()   // верх
-        ctx.beginPath(); ctx.moveTo(p, 178); ctx.lineTo(p, 200); ctx.stroke() // низ
-        ctx.beginPath(); ctx.moveTo(78, p); ctx.lineTo(56, p); ctx.stroke()   // лево
-        ctx.beginPath(); ctx.moveTo(178, p); ctx.lineTo(200, p); ctx.stroke() // право
+        ctx.beginPath(); ctx.moveTo(p, 84); ctx.lineTo(p, 58); ctx.stroke()   // верх
+        ctx.beginPath(); ctx.moveTo(p, 172); ctx.lineTo(p, 198); ctx.stroke() // низ
+        ctx.beginPath(); ctx.moveTo(84, p); ctx.lineTo(58, p); ctx.stroke()   // лево
+        ctx.beginPath(); ctx.moveTo(172, p); ctx.lineTo(198, p); ctx.stroke() // право
       })
+      // корпус — квадрат со слегка скруглёнными углами
       ctx.fillStyle = fill
-      ctx.beginPath(); ctx.roundRect(78, 78, 100, 100, 14); ctx.fill(); ctx.stroke()
-      // внутренний узор
       ctx.strokeStyle = stroke
-      ctx.lineWidth = 5
-      ctx.beginPath(); ctx.roundRect(104, 104, 48, 48, 8); ctx.stroke()
-      ctx.fillStyle = dark
-      ctx.beginPath(); ctx.arc(128, 128, 8, 0, Math.PI * 2); ctx.fill()
+      ctx.lineWidth = 9
+      ctx.beginPath(); ctx.roundRect(84, 84, 88, 88, 4); ctx.fill(); ctx.stroke()
+      // внутреннее ядро (квадрат)
+      ctx.lineWidth = 6
+      ctx.beginPath(); ctx.roundRect(110, 110, 36, 36, 3); ctx.stroke()
+      // точка-ключ (pin 1) в углу — характерный признак микросхемы
+      ctx.fillStyle = stroke
+      ctx.beginPath(); ctx.arc(99, 99, 5, 0, Math.PI * 2); ctx.fill()
     }
 
     return new THREE.CanvasTexture(c)
+  }
+
+  // =====================
+  // ФОРМЫ ЧАСТИЦ ПО СЕКЦИЯМ (Шаг 4) — математические наборы целевых позиций.
+  // Масштаб согласован с картой (ширина ~worldWidth=30 → x≈±15, y≈±8), z около 0.
+  // Те же particleCount частиц переиспользуются — просто новые цели для lerp.
+  // =====================
+  buildSectionShapes() {
+    const N = particleCount
+    this.targetGrid = new Float32Array(N * 3)
+    this.targetLattice = new Float32Array(N * 3)
+    this.targetGraph = new Float32Array(N * 3)
+    this.targetArrow = new Float32Array(N * 3)
+
+    // ── stats: крупная сетка-мешь (точки вдоль линий грида) ──
+    {
+      const cols = 8, rows = 5, W = 26, H = 15
+      const x0 = -W / 2, y0 = -H / 2
+      for (let i = 0; i < N; i++) {
+        let x, y
+        if (i % 2 === 0) {
+          // вертикальные линии: фикс. колонка, произвольный y
+          const c = (Math.random() * (cols + 1)) | 0
+          x = x0 + (c / cols) * W
+          y = y0 + Math.random() * H
+        } else {
+          // горизонтальные линии: фикс. ряд, произвольный x
+          const r = (Math.random() * (rows + 1)) | 0
+          y = y0 + (r / rows) * H
+          x = x0 + Math.random() * W
+        }
+        this.targetGrid[i * 3] = x
+        this.targetGrid[i * 3 + 1] = y
+        this.targetGrid[i * 3 + 2] = (Math.random() - 0.5) * 0.5
+      }
+    }
+
+    // ── services: равномерная матрица side×side ──
+    {
+      const side = Math.floor(Math.sqrt(N)) // ≈63
+      const W = 24, H = 16
+      for (let i = 0; i < N; i++) {
+        const gx = i % side
+        const gy = Math.min((i / side) | 0, side - 1)
+        this.targetLattice[i * 3] = -W / 2 + (gx / (side - 1)) * W
+        this.targetLattice[i * 3 + 1] = -H / 2 + (gy / (side - 1)) * H
+        this.targetLattice[i * 3 + 2] = 0
+      }
+    }
+
+    // ── projects: граф — кластеры-узлы, соединённые рёбрами ──
+    {
+      const nodes = [
+        { x: -10, y: 5 }, { x: 9, y: 6 }, { x: 0, y: 0 },
+        { x: -8, y: -6 }, { x: 10, y: -4 },
+      ]
+      const edges = [[0, 2], [1, 2], [3, 2], [4, 2], [0, 3], [1, 4]]
+      for (let i = 0; i < N; i++) {
+        let x, y
+        if (i % 3 === 0) {
+          // точка на ребре
+          const e = edges[(Math.random() * edges.length) | 0]
+          const a = nodes[e[0]], b = nodes[e[1]], t = Math.random()
+          x = a.x + (b.x - a.x) * t + (Math.random() - 0.5) * 0.4
+          y = a.y + (b.y - a.y) * t + (Math.random() - 0.5) * 0.4
+        } else {
+          // точка в кластере вокруг узла
+          const nd = nodes[(Math.random() * nodes.length) | 0]
+          const ang = Math.random() * Math.PI * 2
+          const r = Math.pow(Math.random(), 0.6) * 2.0
+          x = nd.x + Math.cos(ang) * r
+          y = nd.y + Math.sin(ang) * r
+        }
+        this.targetGraph[i * 3] = x
+        this.targetGraph[i * 3 + 1] = y
+        this.targetGraph[i * 3 + 2] = (Math.random() - 0.5) * 0.6
+      }
+    }
+
+    // ── mission: восходящая стрела (вектор роста) ──
+    {
+      const topY = 8, botY = -8, headY = 3, headW = 5.5
+      for (let i = 0; i < N; i++) {
+        let x, y
+        const r = Math.random()
+        if (r < 0.55) {
+          // шахта (вертикаль)
+          x = (Math.random() - 0.5) * 0.7
+          y = botY + Math.random() * (topY - botY)
+        } else if (r < 0.775) {
+          // левое перо наконечника: вершина (0,topY) → (-headW, headY)
+          const t = Math.random()
+          x = -headW * t + (Math.random() - 0.5) * 0.5
+          y = topY + (headY - topY) * t
+        } else {
+          // правое перо: вершина (0,topY) → (headW, headY)
+          const t = Math.random()
+          x = headW * t + (Math.random() - 0.5) * 0.5
+          y = topY + (headY - topY) * t
+        }
+        this.targetArrow[i * 3] = x
+        this.targetArrow[i * 3 + 1] = y
+        this.targetArrow[i * 3 + 2] = (Math.random() - 0.5) * 0.5
+      }
+    }
   }
 
   initGlyphs() {
@@ -517,8 +647,8 @@ export default class IntroScene {
     const now = performance.now()
     const pos = this.geometry.attributes.position.array
 
-    // фон
-    this.bgMat.opacity = 0.4 + Math.sin(now * 0.0008) * 0.12
+    // фон (чуть плотнее — живой цветной фон должен читаться во всех секциях)
+    this.bgMat.opacity = 0.5 + Math.sin(now * 0.0008) * 0.12
     this.bgPoints.rotation.z = Math.sin(now * 0.00005) * 0.05
     const bgArr = this.bgGeo.attributes.position.array
     for (let i = 0; i < bgCount; i++) {
@@ -529,14 +659,14 @@ export default class IntroScene {
     // яркость/размер частиц по фазам
     if (this.phase === 0) {
       const t = Math.min((now - this.phaseStart) / this.PHASE_DURATION[0], 1)
-      this.material.opacity += (Math.min(t * 1.1, 0.95) - this.material.opacity) * 0.04
-      this.material.size    += (0.04 - this.material.size) * 0.04
+      this.mapMaterial.opacity += (Math.min(t * 1.1, 0.95) - this.mapMaterial.opacity) * 0.04
+      this.mapMaterial.size    += (0.04 - this.mapMaterial.size) * 0.04
     } else if (this.phase === 1) {
-      this.material.size += (0.03 - this.material.size) * 0.05
-      this.material.opacity += (0.85 - this.material.opacity) * 0.05
+      this.mapMaterial.size += (0.03 - this.mapMaterial.size) * 0.05
+      this.mapMaterial.opacity += (0.85 - this.mapMaterial.opacity) * 0.05
     } else {
-      this.material.opacity += (0.9 - this.material.opacity) * 0.04
-      this.material.size    += (0.045 - this.material.size) * 0.04
+      this.mapMaterial.opacity += (0.95 - this.mapMaterial.opacity) * 0.04
+      this.mapMaterial.size    += (0.052 - this.mapMaterial.size) * 0.04
     }
 
     if (now - this.phaseStart > this.PHASE_DURATION[this.phase] && this.phase < 4) this.nextPhase()
@@ -573,7 +703,7 @@ export default class IntroScene {
       this.updateTrail()
     }
 
-    this.particles.rotation.y = (this.phase >= 2) ? Math.sin(now * 0.0002) * 0.1 : 0
+    this.mapParticles.rotation.y = (this.phase >= 2) ? Math.sin(now * 0.0002) * 0.1 : 0
 
     // камера реагирует на скролл ТОЛЬКО после завершения интро (финальная фаза)
     if (this.phase >= 4) {
@@ -585,11 +715,12 @@ export default class IntroScene {
       this.camera.position.y += (targetY - this.camera.position.y) * 0.05
     }
 
-    // Шаг 3: мягкая интерполяция цвета частиц и силы bloom к активной секции.
-    // Малый коэффициент (0.02) → переход плавный, без мерцания. До скролла цель —
-    // золото (= исходный цвет), поэтому интро/камера/глифы не затрагиваются.
-    this.material.color.lerp(this.targetColor, 0.02)
-    this.bloomPass.strength += (this.targetBloom - this.bloomPass.strength) * 0.02
+    // Шаг 3: интерполяция цвета ИМЕННО частиц-карты Казахстана (mapParticles /
+    // mapMaterial — облако точек по targetMap) к цвету активной секции.
+    // Коэффициент 0.05 → переход плавный, но успевает смениться при обычном скролле.
+    // До скролла цель — золото (= исходный цвет), интро/камера не затрагиваются.
+    this.mapMaterial.color.lerp(this.targetColor, 0.05)
+    this.bloomPass.strength += (this.targetBloom - this.bloomPass.strength) * 0.05
 
     this.composer.render()
   }
@@ -609,6 +740,23 @@ export default class IntroScene {
     const color = SECTION_COLORS[id]
     if (color) this.targetColor.copy(color)
     this.targetBloom = SECTION_BLOOM[id] ?? BLOOM_BASE
+
+    // Шаг 4: после интро (фаза 4) частицы карты перетекают в форму секции.
+    // До конца интро форму НЕ трогаем — ею управляет таймлайн (ядро→взрыв→карта).
+    let shape = '—'
+    if (this.phase >= 4 && this.sectionTargets && this.sectionTargets[id]) {
+      this.currentTarget = this.sectionTargets[id]
+      this.lerpSpeed = 0.03 // мягкое перетекание формы
+      shape = this._shapeName.get(this.currentTarget) || '?'
+    }
+
+    // ВРЕМЕННО (отладка Шагов 3–4): секция, целевой цвет и форма частиц-карты.
+    console.log(
+      '[scene] section →', id,
+      '| shape:', shape,
+      '| target #' + this.targetColor.getHexString(),
+      '| applies to:', this.mapParticles?.type, '/', this.mapMaterial?.type,
+    )
   }
 
   // =====================
@@ -669,7 +817,7 @@ export default class IntroScene {
     this.trailGeo.dispose()
 
     // материалы
-    this.material.dispose()
+    this.mapMaterial.dispose()
     this.bgMat.dispose()
     this.trailMat.dispose()
 

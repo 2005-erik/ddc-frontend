@@ -44,52 +44,42 @@ export default function IntroScene({ onComplete, className }) {
       if (onCompleteRef.current) onCompleteRef.current()
     }
 
-    // ── Прогресс скролла → сцена (rAF-троттлинг, без дёрганья на каждый пиксель) ──
+    // ── Скролл → сцена: прогресс + активная секция (rAF-троттлинг) ──
     let rafId = null
     const computeProgress = () => {
       const max = document.body.scrollHeight - window.innerHeight
       const p = max > 0 ? window.scrollY / max : 0
       return Math.min(1, Math.max(0, p))
     }
+    // Активная секция = та, что пересекает вертикальную середину экрана.
+    // Надёжнее, чем intersectionRatio: высокие секции тоже определяются верно.
+    const computeActiveSection = () => {
+      const mid = window.innerHeight / 2
+      for (const id of SECTION_IDS) {
+        const el = document.getElementById(id)
+        if (!el) continue
+        const r = el.getBoundingClientRect()
+        if (r.top <= mid && r.bottom >= mid) return id
+      }
+      return null
+    }
     const onScroll = () => {
       if (rafId !== null) return
       rafId = requestAnimationFrame(() => {
         rafId = null
-        engine?.setScrollProgress(computeProgress())
+        if (!engine) return
+        engine.setScrollProgress(computeProgress())
+        const sec = computeActiveSection()
+        if (sec && sec !== engine.activeSection) engine.setActiveSection(sec)
       })
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     onScroll() // инициализация на текущей позиции
 
-    // ── Активная секция через IntersectionObserver ──
-    const ratios = new Map()
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          ratios.set(e.target.id, e.isIntersecting ? e.intersectionRatio : 0)
-        }
-        let best = null
-        let bestRatio = 0
-        for (const [id, r] of ratios) {
-          if (r > bestRatio) {
-            bestRatio = r
-            best = id
-          }
-        }
-        if (best && best !== engine?.activeSection) engine?.setActiveSection(best)
-      },
-      { threshold: [0, 0.25, 0.5, 0.75, 1] }
-    )
-    for (const id of SECTION_IDS) {
-      const el = document.getElementById(id)
-      if (el) io.observe(el)
-    }
-
     // cleanup: полная очистка ресурсов (и при unmount, и при двойном маунте Strict Mode)
     return () => {
       window.removeEventListener('scroll', onScroll)
       if (rafId !== null) cancelAnimationFrame(rafId)
-      io.disconnect()
       if (engine) engine.dispose()
     }
   }, [])
