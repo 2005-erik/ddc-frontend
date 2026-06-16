@@ -49,14 +49,11 @@ function StatCounter({ value, suffix = '', duration = 1400 }) {
 
 export default function StatsSection() {
   return (
-    <section
-      id="stats"
-      className="relative z-10 scroll-mt-20 border-y border-white/10 bg-ink/85 backdrop-blur-sm"
-    >
+    <section id="stats" className="relative z-10 scroll-mt-20">
       <div className="mx-auto max-w-7xl px-6 py-16">
-        <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
           {stats.map((s) => (
-            <div key={s.label} className="text-center">
+            <div key={s.label} className="plate px-4 py-6 text-center">
               <div
                 className={`text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl ${s.color}`}
               >

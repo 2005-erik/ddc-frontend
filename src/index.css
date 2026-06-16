@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  /* Локальная «плашка» под текст: полупрозрачный тёмный фон + blur ТОЛЬКО под
+     блоком, чтобы между блоками и по краям были видны цветные частицы сцены.
+     Применяется к заголовкам, абзацам, карточкам, форме — не на всю секцию. */
+  .plate {
+    @apply rounded-2xl border border-white/10 bg-ink-900/70 backdrop-blur-md;
+  }
+  /* Компактная плашка под заголовок секции — по содержимому, не во всю ширину. */
+  .plate-head {
+    @apply inline-block rounded-xl border border-white/10 bg-ink-900/65 px-5 py-3 backdrop-blur-md;
+  }
+}
+
 :root {
   color-scheme: dark;
 }

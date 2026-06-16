@@ -36,13 +36,10 @@ const services = [
 
 export default function ServicesSection() {
   return (
-    <section
-      id="services"
-      className="relative z-10 scroll-mt-20 bg-black/80 backdrop-blur-sm"
-    >
+    <section id="services" className="relative z-10 scroll-mt-20">
       <div className="mx-auto max-w-7xl px-6 py-20">
         <div className="mb-10 flex items-end justify-between gap-4">
-          <div>
+          <div className="plate-head">
             <h2 className="text-2xl font-bold text-white sm:text-3xl">Услуги</h2>
             <p className="mt-1 text-sm text-white/50">
               Цифровые сервисы и решения для финансового сектора
@@ -55,7 +52,7 @@ export default function ServicesSection() {
           {services.map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
-              className="group rounded-2xl border border-white/10 bg-white/5 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-nbk-gold/50 hover:shadow-[0_0_28px_rgba(255,215,0,0.15)]"
+              className="plate group p-6 transition-all duration-300 hover:-translate-y-1 hover:border-nbk-gold/50 hover:shadow-[0_0_28px_rgba(255,215,0,0.15)]"
             >
               <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl border border-nbk-gold/30 bg-nbk-gold/10 text-nbk-gold transition-colors group-hover:bg-nbk-gold/20">
                 <Icon className="h-6 w-6" strokeWidth={1.75} aria-hidden="true" />

@@ -39,13 +39,10 @@ export default function AboutSection() {
   const current = milestones[active]
 
   return (
-    <section
-      id="about"
-      className="relative z-10 scroll-mt-20 bg-black/80 backdrop-blur-sm"
-    >
+    <section id="about" className="relative z-10 scroll-mt-20">
       <div className="mx-auto max-w-7xl px-6 py-20">
         <div className="mb-10 flex items-end justify-between gap-4">
-          <div>
+          <div className="plate-head">
             <h2 className="text-2xl font-bold text-white sm:text-3xl">О нас</h2>
             <p className="mt-1 text-sm text-white/50">
               Центр цифрового развития Национального Банка Казахстана
@@ -54,17 +51,20 @@ export default function AboutSection() {
           <span className="hidden h-1 w-16 rounded-full bg-nbk-gold sm:block" />
         </div>
 
-        <p className="mb-12 max-w-3xl leading-relaxed text-white/70">
+        <p className="plate mb-12 max-w-3xl p-5 leading-relaxed text-white/70 sm:p-6">
           Почти три десятилетия мы развиваем технологическую основу финансовой
           системы Казахстана — от первого сервисного бюро до современного центра
           цифровой трансформации.
         </p>
 
         {/* Таймлайн: горизонтальный на десктопе, вертикальный на мобильном */}
-        <div className="relative">
-          {/* соединительная линия */}
-          <div className="absolute left-0 right-0 top-5 hidden h-px bg-white/15 md:block" />
-          <div className="absolute bottom-2 left-5 top-2 w-px bg-white/15 md:hidden" />
+        {/* внешняя плашка с отступами; внутренний relative — система координат
+            для соединительных линий (чтобы padding не сбивал их позицию) */}
+        <div className="plate p-6 sm:p-8">
+          <div className="relative">
+            {/* соединительная линия */}
+            <div className="absolute left-0 right-0 top-5 hidden h-px bg-white/15 md:block" />
+            <div className="absolute bottom-2 left-5 top-2 w-px bg-white/15 md:hidden" />
 
           <ol className="flex flex-col gap-6 md:flex-row md:justify-between md:gap-2">
             {milestones.map((m, i) => {
@@ -102,10 +102,11 @@ export default function AboutSection() {
               )
             })}
           </ol>
+          </div>
         </div>
 
         {/* Описание активной вехи */}
-        <div className="mt-10 rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8">
+        <div className="plate mt-10 p-6 sm:p-8">
           <h3 className="text-lg font-semibold text-white">
             {current.title}{' '}
             <span className="text-nbk-gold">· {current.year}</span>

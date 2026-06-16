@@ -64,13 +64,10 @@ export default function ConsultSection() {
   }
 
   return (
-    <section
-      id="consult"
-      className="relative z-10 scroll-mt-20 bg-black/80 backdrop-blur-sm"
-    >
+    <section id="consult" className="relative z-10 scroll-mt-20">
       <div className="mx-auto max-w-7xl px-6 py-20">
         <div className="mb-10 flex items-end justify-between gap-4">
-          <div>
+          <div className="plate-head">
             <h2 className="text-2xl font-bold text-white sm:text-3xl">Оставить заявку</h2>
             <p className="mt-1 text-sm text-white/50">
               Заполните форму — специалист свяжется с вами
@@ -82,7 +79,7 @@ export default function ConsultSection() {
         <form
           onSubmit={handleSubmit}
           noValidate
-          className="mx-auto max-w-2xl rounded-2xl border border-white/10 bg-ink/60 p-6 sm:p-8"
+          className="plate mx-auto max-w-2xl p-6 sm:p-8"
         >
           <div className="grid gap-5">
             {/* Интересующая услуга */}

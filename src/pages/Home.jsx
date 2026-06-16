@@ -119,13 +119,10 @@ export default function Home() {
       </main>
 
       {/* ===== НОВОСТИ (первой после Hero) ===== */}
-      <section
-        id="news"
-        className="relative z-10 scroll-mt-20 bg-black/80 backdrop-blur-sm"
-      >
+      <section id="news" className="relative z-10 scroll-mt-20">
         <div className="mx-auto max-w-7xl px-6 py-20">
           <div className="mb-10 flex items-end justify-between gap-4">
-            <div>
+            <div className="plate-head">
               <h2 className="text-2xl font-bold text-white sm:text-3xl">Новости</h2>
               <p className="mt-1 text-sm text-white/50">
                 Цифровое развитие финансового сектора Казахстана
@@ -135,7 +132,9 @@ export default function Home() {
           </div>
 
           {newsLoading ? (
-            <p className="py-16 text-center text-white/50">Загрузка новостей…</p>
+            <p className="plate inline-block px-5 py-4 text-center text-white/50">
+              Загрузка новостей…
+            </p>
           ) : (
             <NewsCarousel items={news} />
           )}
@@ -152,13 +151,10 @@ export default function Home() {
       <ServicesSection />
 
       {/* ===== ПРОЕКТЫ ===== */}
-      <section
-        id="projects"
-        className="relative z-10 scroll-mt-20 bg-black/80 backdrop-blur-sm"
-      >
+      <section id="projects" className="relative z-10 scroll-mt-20">
         <div className="mx-auto max-w-7xl px-6 py-20">
           <div className="mb-10 flex items-end justify-between gap-4">
-            <div>
+            <div className="plate-head">
               <h2 className="text-2xl font-bold text-white sm:text-3xl">Проекты</h2>
               <p className="mt-1 text-sm text-white/50">
                 Ключевые инициативы цифрового развития
@@ -166,7 +162,7 @@ export default function Home() {
             </div>
             <span className="hidden h-1 w-16 rounded-full bg-nbk-gold sm:block" />
           </div>
-          <p className="max-w-3xl leading-relaxed text-white/70">
+          <p className="plate max-w-3xl p-6 leading-relaxed text-white/70 sm:p-8">
             Флагманский проект Центра — единый портал закупок Национального Банка,
             переведший закупочные процедуры регулятора в прозрачную цифровую среду.
             Параллельно развиваются системы обработки данных, информационной
@@ -182,13 +178,10 @@ export default function Home() {
       <ConsultSection />
 
       {/* ===== КОНТАКТЫ / ФУТЕР ===== */}
-      <footer
-        id="contacts"
-        className="relative z-10 scroll-mt-20 border-t border-white/10 bg-ink/90 backdrop-blur-sm"
-      >
+      <footer id="contacts" className="relative z-10 scroll-mt-20">
         <div className="mx-auto max-w-7xl px-6 py-16">
           <div className="mb-10 flex items-end justify-between gap-4">
-            <div>
+            <div className="plate-head">
               <h2 className="text-2xl font-bold text-white sm:text-3xl">Контакты</h2>
               <p className="mt-1 text-sm text-white/50">
                 Свяжитесь с Центром цифрового развития
@@ -197,14 +190,14 @@ export default function Home() {
             <span className="hidden h-1 w-16 rounded-full bg-nbk-gold sm:block" />
           </div>
 
-          <div className="grid gap-6 text-sm sm:grid-cols-3">
+          <div className="plate grid gap-6 p-6 text-sm sm:grid-cols-3 sm:p-8">
             <div>
               <dt className="font-semibold tracking-wide text-nbk-gold">Контакт-центр</dt>
               <dd className="mt-1 text-white/70">1477 — круглосуточно</dd>
             </div>
             <div>
               <dt className="font-semibold tracking-wide text-nbk-gold">Расположение</dt>
-              <dd className="mt-1 text-white/70">г. Алматы, Национальный Банк РК</dd>
+              <dd className="mt-1 text-white/70">г. Астана, Национальный Банк РК</dd>
             </div>
             <div>
               <dt className="font-semibold tracking-wide text-nbk-gold">Закупки</dt>
@@ -212,7 +205,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mt-12 border-t border-white/10 pt-6 text-sm text-white/40">
+          <div className="plate mt-8 inline-block px-5 py-3 text-sm text-white/50">
             © {new Date().getFullYear()} Digital Development Center — National Bank
             of Kazakhstan
           </div>
