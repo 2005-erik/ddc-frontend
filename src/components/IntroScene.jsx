@@ -76,9 +76,22 @@ export default function IntroScene({ onComplete, className }) {
     window.addEventListener('scroll', onScroll, { passive: true })
     onScroll() // инициализация на текущей позиции
 
+    // ── Курсор → реакция периферийного звёздного поля ──
+    const onPointerMove = (e) => {
+      const nx = (e.clientX / window.innerWidth) * 2 - 1
+      const ny = -(e.clientY / window.innerHeight) * 2 + 1
+      engine?.setMouse(nx, ny)
+    }
+    const onPointerLeave = () => engine?.setMouseActive(false)
+    window.addEventListener('pointermove', onPointerMove, { passive: true })
+    // только когда курсор покидает окно целиком (не на каждой границе элемента)
+    document.addEventListener('mouseleave', onPointerLeave)
+
     // cleanup: полная очистка ресурсов (и при unmount, и при двойном маунте Strict Mode)
     return () => {
       window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('pointermove', onPointerMove)
+      document.removeEventListener('mouseleave', onPointerLeave)
       if (rafId !== null) cancelAnimationFrame(rafId)
       if (engine) engine.dispose()
     }

@@ -195,21 +195,23 @@ export default class IntroScene {
     this.sectionTargets = {
       hero: this.targetMap,
       news: this.targetMap,
-      about: this.targetMap,
-      stats: this.targetGrid,
-      services: this.targetLattice,
-      projects: this.targetGraph,
-      mission: this.targetArrow,
-      consult: this.targetMap,
-      contacts: this.targetMap,
+      about: this.targetBuilding,   // здание банка
+      stats: this.targetChart,      // гистограмма роста
+      services: this.targetCoin,    // монета с ₸
+      projects: this.targetNetwork, // схема-сеть (узлы + связи)
+      mission: this.targetArrow,    // стрелка вверх / вектор роста
+      consult: this.targetShield,   // щит с замком
+      contacts: this.targetMap,     // карта Казахстана (возврат)
     }
     // имена форм — только для отладочного лога
     this._shapeName = new Map([
       [this.targetMap, 'map'],
-      [this.targetGrid, 'grid'],
-      [this.targetLattice, 'lattice'],
-      [this.targetGraph, 'graph'],
+      [this.targetBuilding, 'building'],
+      [this.targetChart, 'chart'],
+      [this.targetCoin, 'coin'],
+      [this.targetNetwork, 'network'],
       [this.targetArrow, 'arrow'],
+      [this.targetShield, 'shield'],
     ])
 
     // =====================
@@ -252,11 +254,191 @@ export default class IntroScene {
     this.trailPoints.position.z = -3
     this.scene.add(this.trailPoints)
 
+    // =====================
+    // ПЕРИФЕРИЙНОЕ ЗВЁЗДНОЕ ПОЛЕ + СВЯЗИ + КУРСОР
+    // =====================
+    this.mouseNDC = new THREE.Vector2(0, 0) // позиция курсора в NDC (-1..1)
+    this.mouseActive = false                 // курсор над сценой?
+    this._mouseWorld = new THREE.Vector3()   // курсор, спроецированный на плоскость звёзд
+    this.buildStarfield()
+
     // bound-обработчики
     this._onResize = this.onResize.bind(this)
     this._animate = this.animate.bind(this)
 
     window.addEventListener('resize', this._onResize)
+  }
+
+  // =====================
+  // ЗВЁЗДНОЕ ПОЛЕ ПЕРИФЕРИИ (Шаг: интерактивная сеть «созвездий»)
+  // Отдельный слой ПОЗАДИ центральной карты, на всю площадь viewport.
+  // Не трогает центральную сцену — только добавляет фон + реакцию на курсор.
+  // =====================
+  buildStarfield() {
+    // Узлы сети — на упорядоченной СЕТКЕ с лёгким джиттером (не хаос «звёзд»),
+    // чтобы читалось как цифровая инфраструктура, а не звёздное небо.
+    const COLS = 16, ROWS = 9
+    const COUNT = COLS * ROWS
+    this.starCount = COUNT
+    this.starHome = new Float32Array(COUNT * 3) // базовые позиции (дом)
+    this.starPos = new Float32Array(COUNT * 3)  // текущие (анимируемые)
+
+    const SPAN_X = 96, SPAN_Y = 54 // на всю площадь, включая края/углы
+    const cellX = SPAN_X / COLS, cellY = SPAN_Y / ROWS
+    let idx = 0
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const baseX = -SPAN_X / 2 + (c + 0.5) * cellX
+        const baseY = -SPAN_Y / 2 + (r + 0.5) * cellY
+        // лёгкий джиттер (≤±35% ячейки) — структура сохраняется, но не «по линейке»
+        const x = baseX + (Math.random() - 0.5) * cellX * 0.5
+        const y = baseY + (Math.random() - 0.5) * cellY * 0.5
+        const z = -4 - Math.random() * 2 // плоская «плата», лёгкая глубина
+        this.starHome[idx * 3] = x; this.starHome[idx * 3 + 1] = y; this.starHome[idx * 3 + 2] = z
+        this.starPos[idx * 3] = x; this.starPos[idx * 3 + 1] = y; this.starPos[idx * 3 + 2] = z
+        idx++
+      }
+    }
+
+    this.starGeo = new THREE.BufferGeometry()
+    this.starGeo.setAttribute('position', new THREE.BufferAttribute(this.starPos, 3))
+    this.starMat = new THREE.PointsMaterial({
+      color: new THREE.Color('#6DAFB6'), // контактные пятачки/via — приглушённый бирюзово-стальной
+      size: 0.18, transparent: true, opacity: 0.55, depthWrite: false, sizeAttenuation: true,
+      // PointsMaterial без текстуры рисует КВАДРАТНЫЕ точки — как пятачки на плате
+    })
+    this.starPoints = new THREE.Points(this.starGeo, this.starMat)
+    this.scene.add(this.starPoints)
+
+    // ── линии-связи: строгая сетка-мешь (соединяем соседей по сетке) ──
+    // LINK_DIST чуть больше шага сетки → связи в основном к ближайшим соседям.
+    this.LINK_DIST = Math.max(cellX, cellY) * 1.35 // ≈8.1
+    this.STAR_INFLUENCE = 14  // радиус влияния курсора (≈треть экрана)
+    this.STAR_REPEL = 3.2     // сдвиг узла от курсора (узлы статичнее)
+    this.MAX_SEG = 1600       // потолок отрезков (каждая трасса = 2 сегмента: 45° + ось)
+
+    this.linkPos = new Float32Array(this.MAX_SEG * 2 * 3)
+    this.linkAlpha = new Float32Array(this.MAX_SEG * 2)
+    this.linkGeo = new THREE.BufferGeometry()
+    this.linkGeo.setAttribute('position', new THREE.BufferAttribute(this.linkPos, 3))
+    this.linkGeo.setAttribute('alpha', new THREE.BufferAttribute(this.linkAlpha, 1))
+    this.linkMat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.NormalBlending, // строгие дорожки платы, без неонового свечения
+      uniforms: { uColor: { value: new THREE.Color('#3E8E96') } }, // приглушённый бирюзово-стальной (PCB)
+      vertexShader: `
+        attribute float alpha;
+        varying float vAlpha;
+        void main() {
+          vAlpha = alpha;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying float vAlpha;
+        uniform vec3 uColor;
+        void main() { gl_FragColor = vec4(uColor, vAlpha); }
+      `,
+    })
+    this.starLines = new THREE.LineSegments(this.linkGeo, this.linkMat)
+    this.scene.add(this.starLines)
+  }
+
+  // Курсор из React (NDC, -1..1)
+  setMouse(nx, ny) {
+    this.mouseNDC.set(nx, ny)
+    this.mouseActive = true
+  }
+  setMouseActive(v) {
+    this.mouseActive = v
+  }
+
+  // Обновление звёзд + связей + реакции на курсор (вызывается в animate).
+  updateStarfield() {
+    if (!this.starPoints) return
+
+    // Интенсивность периферии: ярко в Hero (верх, scrollProgress≈0),
+    // спокойнее в контентных секциях (ниже) — чтобы не мешать тексту.
+    const inten = 1 - 0.6 * this.scrollProgress // 1.0 → 0.4
+    this.starMat.opacity = 0.22 + 0.3 * inten // спокойнее «звёздности», ровный свет узлов
+
+    // курсор → мировые координаты на плоскости звёзд (z = -4)
+    const PLANE_Z = -4
+    let mx = Infinity, my = Infinity
+    if (this.mouseActive) {
+      this._mouseWorld.set(this.mouseNDC.x, this.mouseNDC.y, 0.5).unproject(this.camera)
+      const dx = this._mouseWorld.x - this.camera.position.x
+      const dy = this._mouseWorld.y - this.camera.position.y
+      const dz = this._mouseWorld.z - this.camera.position.z
+      const t = (PLANE_Z - this.camera.position.z) / dz
+      mx = this.camera.position.x + dx * t
+      my = this.camera.position.y + dy * t
+    }
+
+    const R = this.STAR_INFLUENCE
+    const repel = this.STAR_REPEL * inten // в контентных секциях реакция слабее
+    const pos = this.starPos
+    const home = this.starHome
+
+    for (let i = 0; i < this.starCount; i++) {
+      const i3 = i * 3
+      let tx = home[i3], ty = home[i3 + 1]
+      if (this.mouseActive) {
+        const rx = home[i3] - mx, ry = home[i3 + 1] - my
+        const d = Math.hypot(rx, ry)
+        if (d < R && d > 0.0001) {
+          const push = (1 - d / R) * repel // мягкое отталкивание, спад к краю радиуса
+          tx += (rx / d) * push
+          ty += (ry / d) * push
+        }
+      }
+      // плавное easing к цели (и возврат домой, когда курсор уходит)
+      pos[i3] += (tx - pos[i3]) * 0.08
+      pos[i3 + 1] += (ty - pos[i3 + 1]) * 0.08
+    }
+    this.starGeo.attributes.position.needsUpdate = true
+
+    // ── ДОРОЖКИ ПЛАТЫ (PCB): между близкими узлами тянем трассу ломаной из
+    //    диагонали 45° + осевого сегмента (H/V). Никаких произвольных углов. ──
+    const LINK = this.LINK_DIST
+    const lp = this.linkPos, la = this.linkAlpha
+    let seg = 0
+    const baseAlpha = 0.32 * inten
+    // записать один сегмент (x1,y1,z1)->(x2,y2,z2) с альфой a
+    const putSeg = (x1, y1, z1, x2, y2, z2, a) => {
+      const o = seg * 6
+      lp[o] = x1; lp[o + 1] = y1; lp[o + 2] = z1
+      lp[o + 3] = x2; lp[o + 4] = y2; lp[o + 5] = z2
+      la[seg * 2] = a; la[seg * 2 + 1] = a
+      seg++
+    }
+    for (let i = 0; i < this.starCount && seg + 2 <= this.MAX_SEG; i++) {
+      const ax = pos[i * 3], ay = pos[i * 3 + 1], az = pos[i * 3 + 2]
+      for (let j = i + 1; j < this.starCount && seg + 2 <= this.MAX_SEG; j++) {
+        const bx = pos[j * 3], by = pos[j * 3 + 1], bz = pos[j * 3 + 2]
+        const dx = bx - ax, dy = by - ay
+        const d = Math.hypot(dx, dy)
+        if (d > LINK) continue
+        let a = (1 - d / LINK) * baseAlpha // ближе — ярче
+        // подсветка участка платы рядом с курсором
+        if (this.mouseActive) {
+          const near = Math.min(Math.hypot(ax - mx, ay - my), Math.hypot(bx - mx, by - my))
+          if (near < R) a *= 1 + 1.8 * (1 - near / R)
+        }
+        // излом под прямым углом/45°: сначала диагональ 45° на min(|dx|,|dy|),
+        // затем осевой сегмент (строго H или V) до точки B.
+        const m = Math.min(Math.abs(dx), Math.abs(dy))
+        const cx = ax + Math.sign(dx) * m
+        const cy = ay + Math.sign(dy) * m
+        const cz = (az + bz) * 0.5
+        putSeg(ax, ay, az, cx, cy, cz, a)       // диагональ 45° (или нулевая, если чистая ось)
+        putSeg(cx, cy, cz, bx, by, bz, a)       // осевой сегмент H/V (или нулевой, если чистая диагональ)
+      }
+    }
+    this.linkGeo.setDrawRange(0, seg * 2)
+    this.linkGeo.attributes.position.needsUpdate = true
+    this.linkGeo.attributes.alpha.needsUpdate = true
   }
 
   // =====================
@@ -383,108 +565,147 @@ export default class IntroScene {
   }
 
   // =====================
-  // ФОРМЫ ЧАСТИЦ ПО СЕКЦИЯМ (Шаг 4) — математические наборы целевых позиций.
-  // Масштаб согласован с картой (ширина ~worldWidth=30 → x≈±15, y≈±8), z около 0.
-  // Те же particleCount частиц переиспользуются — просто новые цели для lerp.
+  // ФОРМЫ ЧАСТИЦ ПО СЕКЦИЯМ — узнаваемые банковские силуэты.
+  // Каждый силуэт рисуем на 2D-canvas (контур + заливка), затем равномерно
+  // сэмплируем закрашенные пиксели в позиции частиц → форма читается сразу.
+  // Масштаб согласован с картой (центр в (0,0), ~±11 по X), z около 0.
   // =====================
   buildSectionShapes() {
-    const N = particleCount
-    this.targetGrid = new Float32Array(N * 3)
-    this.targetLattice = new Float32Array(N * 3)
-    this.targetGraph = new Float32Array(N * 3)
-    this.targetArrow = new Float32Array(N * 3)
+    this.targetBuilding = this._sampleShape(256, 220, 0.085, (ctx, w, h) => this._drawBank(ctx, w, h))
+    this.targetChart = this._sampleShape(256, 200, 0.085, (ctx, w, h) => this._drawChart(ctx, w, h))
+    this.targetCoin = this._sampleShape(220, 220, 0.088, (ctx, w, h) => this._drawCoin(ctx, w, h))
+    this.targetNetwork = this._sampleShape(256, 220, 0.08, (ctx, w, h) => this._drawNetwork(ctx, w, h))
+    this.targetArrow = this._sampleShape(200, 220, 0.08, (ctx, w, h) => this._drawArrow(ctx, w, h))
+    this.targetShield = this._sampleShape(200, 240, 0.072, (ctx, w, h) => this._drawShield(ctx, w, h))
+  }
 
-    // ── stats: крупная сетка-мешь (точки вдоль линий грида) ──
-    {
-      const cols = 8, rows = 5, W = 26, H = 15
-      const x0 = -W / 2, y0 = -H / 2
-      for (let i = 0; i < N; i++) {
-        let x, y
-        if (i % 2 === 0) {
-          // вертикальные линии: фикс. колонка, произвольный y
-          const c = (Math.random() * (cols + 1)) | 0
-          x = x0 + (c / cols) * W
-          y = y0 + Math.random() * H
-        } else {
-          // горизонтальные линии: фикс. ряд, произвольный x
-          const r = (Math.random() * (rows + 1)) | 0
-          y = y0 + (r / rows) * H
-          x = x0 + Math.random() * W
-        }
-        this.targetGrid[i * 3] = x
-        this.targetGrid[i * 3 + 1] = y
-        this.targetGrid[i * 3 + 2] = (Math.random() - 0.5) * 0.5
+  // Рисуем силуэт белым на canvas, собираем закрашенные пиксели и равномерно
+  // распределяем по ним particleCount частиц. scale — мир. единиц на пиксель.
+  _sampleShape(cw, ch, scale, draw) {
+    const c = document.createElement('canvas')
+    c.width = cw; c.height = ch
+    const ctx = c.getContext('2d')
+    ctx.fillStyle = '#fff'
+    ctx.strokeStyle = '#fff'
+    draw(ctx, cw, ch)
+
+    const data = ctx.getImageData(0, 0, cw, ch).data
+    const filled = []
+    for (let py = 0; py < ch; py++) {
+      for (let px = 0; px < cw; px++) {
+        if (data[(py * cw + px) * 4 + 3] > 128) { filled.push(px); filled.push(py) }
       }
     }
-
-    // ── services: равномерная матрица side×side ──
-    {
-      const side = Math.floor(Math.sqrt(N)) // ≈63
-      const W = 24, H = 16
-      for (let i = 0; i < N; i++) {
-        const gx = i % side
-        const gy = Math.min((i / side) | 0, side - 1)
-        this.targetLattice[i * 3] = -W / 2 + (gx / (side - 1)) * W
-        this.targetLattice[i * 3 + 1] = -H / 2 + (gy / (side - 1)) * H
-        this.targetLattice[i * 3 + 2] = 0
+    const n = filled.length / 2
+    const out = new Float32Array(particleCount * 3)
+    for (let i = 0; i < particleCount; i++) {
+      let wx = 0, wy = 0
+      if (n > 0) {
+        const k = (Math.random() * n) | 0
+        const px = filled[k * 2], py = filled[k * 2 + 1]
+        // в мировые координаты: центрируем и переворачиваем Y, +лёгкий джиттер
+        wx = (px - cw / 2) * scale + (Math.random() - 0.5) * scale
+        wy = -(py - ch / 2) * scale + (Math.random() - 0.5) * scale
       }
+      out[i * 3] = wx
+      out[i * 3 + 1] = wy
+      out[i * 3 + 2] = (Math.random() - 0.5) * 0.5
     }
+    return out
+  }
 
-    // ── projects: граф — кластеры-узлы, соединённые рёбрами ──
-    {
-      const nodes = [
-        { x: -10, y: 5 }, { x: 9, y: 6 }, { x: 0, y: 0 },
-        { x: -8, y: -6 }, { x: 10, y: -4 },
-      ]
-      const edges = [[0, 2], [1, 2], [3, 2], [4, 2], [0, 3], [1, 4]]
-      for (let i = 0; i < N; i++) {
-        let x, y
-        if (i % 3 === 0) {
-          // точка на ребре
-          const e = edges[(Math.random() * edges.length) | 0]
-          const a = nodes[e[0]], b = nodes[e[1]], t = Math.random()
-          x = a.x + (b.x - a.x) * t + (Math.random() - 0.5) * 0.4
-          y = a.y + (b.y - a.y) * t + (Math.random() - 0.5) * 0.4
-        } else {
-          // точка в кластере вокруг узла
-          const nd = nodes[(Math.random() * nodes.length) | 0]
-          const ang = Math.random() * Math.PI * 2
-          const r = Math.pow(Math.random(), 0.6) * 2.0
-          x = nd.x + Math.cos(ang) * r
-          y = nd.y + Math.sin(ang) * r
-        }
-        this.targetGraph[i * 3] = x
-        this.targetGraph[i * 3 + 1] = y
-        this.targetGraph[i * 3 + 2] = (Math.random() - 0.5) * 0.6
-      }
+  // about/projects — классический фасад банка: фронтон + колонны + ступени
+  _drawBank(ctx, w, h) {
+    // треугольный фронтон (крыша)
+    ctx.beginPath(); ctx.moveTo(16, 80); ctx.lineTo(w / 2, 12); ctx.lineTo(w - 16, 80); ctx.closePath(); ctx.fill()
+    // архитрав (балка под фронтоном)
+    ctx.fillRect(30, 80, w - 60, 18)
+    // ряд колонн
+    const top = 104, bot = 178, x0 = 40, cw = 18, count = 5
+    const span = (w - 80) - count * cw
+    const gap = span / (count - 1)
+    for (let k = 0; k < count; k++) {
+      ctx.fillRect(x0 + k * (cw + gap), top, cw, bot - top)
     }
+    // стилобат (верхняя плита под колоннами) + ступени
+    ctx.fillRect(28, 178, w - 56, 12)
+    ctx.fillRect(20, 192, w - 40, 11)
+    ctx.fillRect(10, 204, w - 20, 12)
+  }
 
-    // ── mission: восходящая стрела (вектор роста) ──
-    {
-      const topY = 8, botY = -8, headY = 3, headW = 5.5
-      for (let i = 0; i < N; i++) {
-        let x, y
-        const r = Math.random()
-        if (r < 0.55) {
-          // шахта (вертикаль)
-          x = (Math.random() - 0.5) * 0.7
-          y = botY + Math.random() * (topY - botY)
-        } else if (r < 0.775) {
-          // левое перо наконечника: вершина (0,topY) → (-headW, headY)
-          const t = Math.random()
-          x = -headW * t + (Math.random() - 0.5) * 0.5
-          y = topY + (headY - topY) * t
-        } else {
-          // правое перо: вершина (0,topY) → (headW, headY)
-          const t = Math.random()
-          x = headW * t + (Math.random() - 0.5) * 0.5
-          y = topY + (headY - topY) * t
-        }
-        this.targetArrow[i * 3] = x
-        this.targetArrow[i * 3 + 1] = y
-        this.targetArrow[i * 3 + 2] = (Math.random() - 0.5) * 0.5
-      }
+  // stats — гистограмма роста (столбцы возрастают слева направо)
+  _drawChart(ctx, w, h) {
+    const base = 184, x0 = 28, bw = 30, gap = 14
+    const heights = [42, 74, 108, 140, 168]
+    for (let k = 0; k < heights.length; k++) {
+      ctx.fillRect(x0 + k * (bw + gap), base - heights[k], bw, heights[k])
     }
+    ctx.fillRect(18, base, w - 36, 6) // базовая линия
+  }
+
+  // services — МОНЕТА: диск с насечённым (реединг) краем, ободок и ₸ внутри
+  _drawCoin(ctx, w, h) {
+    const cx = w / 2, cy = h / 2, R = 92, teeth = 44, notch = 6
+    // диск с зубчатым/насечённым краем
+    const steps = teeth * 2
+    ctx.beginPath()
+    for (let k = 0; k <= steps; k++) {
+      const ang = (k / steps) * Math.PI * 2
+      const rr = (k % 2 === 0) ? R : R - notch
+      const x = cx + Math.cos(ang) * rr, y = cy + Math.sin(ang) * rr
+      k === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+    }
+    ctx.closePath(); ctx.fill()
+    // вырезаем тонкий ободок и символ ₸ → читаются на диске
+    ctx.globalCompositeOperation = 'destination-out'
+    ctx.lineWidth = 5
+    ctx.beginPath(); ctx.arc(cx, cy, R - 17, 0, Math.PI * 2); ctx.stroke()
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.font = 'bold 108px Georgia, serif'
+    ctx.fillText('₸', cx, cy + 6)
+    ctx.globalCompositeOperation = 'source-over'
+  }
+
+  // projects — схема-сеть: аккуратные узлы-кружки, соединённые прямыми линиями
+  _drawNetwork(ctx, w, h) {
+    const nodes = [
+      { x: 128, y: 34 },
+      { x: 40, y: 116 }, { x: 216, y: 116 },
+      { x: 84, y: 196 }, { x: 172, y: 196 },
+    ]
+    const edges = [[0, 1], [0, 2], [1, 2], [1, 3], [2, 4], [3, 4]]
+    ctx.lineCap = 'round'; ctx.lineWidth = 7
+    edges.forEach(([a, b]) => {
+      ctx.beginPath(); ctx.moveTo(nodes[a].x, nodes[a].y); ctx.lineTo(nodes[b].x, nodes[b].y); ctx.stroke()
+    })
+    nodes.forEach((n) => { ctx.beginPath(); ctx.arc(n.x, n.y, 18, 0, Math.PI * 2); ctx.fill() })
+  }
+
+  // mission — стрелка вверх (вектор роста): треугольный наконечник + шахта
+  _drawArrow(ctx, w, h) {
+    const cx = w / 2
+    ctx.beginPath() // наконечник
+    ctx.moveTo(cx, 22); ctx.lineTo(cx - 56, 96); ctx.lineTo(cx + 56, 96); ctx.closePath(); ctx.fill()
+    ctx.fillRect(cx - 17, 92, 34, h - 124) // шахта
+  }
+
+  // consult — щит с замочной скважиной (безопасность, доверие)
+  _drawShield(ctx, w, h) {
+    ctx.beginPath()
+    ctx.moveTo(28, 38)
+    ctx.lineTo(w - 28, 38)
+    ctx.lineTo(w - 28, 128)
+    ctx.quadraticCurveTo(w - 28, 198, w / 2, 226)
+    ctx.quadraticCurveTo(28, 198, 28, 128)
+    ctx.closePath(); ctx.fill()
+    // вырезаем замочную скважину → читается как «замок»
+    ctx.globalCompositeOperation = 'destination-out'
+    ctx.beginPath(); ctx.arc(w / 2, 112, 17, 0, Math.PI * 2); ctx.fill()
+    ctx.beginPath()
+    ctx.moveTo(w / 2 - 9, 120); ctx.lineTo(w / 2 + 9, 120)
+    ctx.lineTo(w / 2 + 14, 162); ctx.lineTo(w / 2 - 14, 162)
+    ctx.closePath(); ctx.fill()
+    ctx.globalCompositeOperation = 'source-over'
   }
 
   initGlyphs() {
@@ -647,14 +868,10 @@ export default class IntroScene {
     const now = performance.now()
     const pos = this.geometry.attributes.position.array
 
-    // фон (чуть плотнее — живой цветной фон должен читаться во всех секциях)
-    this.bgMat.opacity = 0.5 + Math.sin(now * 0.0008) * 0.12
-    this.bgPoints.rotation.z = Math.sin(now * 0.00005) * 0.05
-    const bgArr = this.bgGeo.attributes.position.array
-    for (let i = 0; i < bgCount; i++) {
-      bgArr[i * 3 + 1] += Math.sin(now * 0.0003 + this.bgPhase[i]) * 0.002
-    }
-    this.bgGeo.attributes.position.needsUpdate = true
+    // глубокий фон: ровный свет, без «мерцания звёзд» — ощущение структуры, не неба.
+    // (лёгкое дыхание яркости оставляем минимальным, вращение почти убрано)
+    this.bgMat.opacity = 0.34 + Math.sin(now * 0.0006) * 0.03
+    this.bgPoints.rotation.z = Math.sin(now * 0.00004) * 0.015
 
     // яркость/размер частиц по фазам
     if (this.phase === 0) {
@@ -721,6 +938,9 @@ export default class IntroScene {
     // До скролла цель — золото (= исходный цвет), интро/камера не затрагиваются.
     this.mapMaterial.color.lerp(this.targetColor, 0.05)
     this.bloomPass.strength += (this.targetBloom - this.bloomPass.strength) * 0.05
+
+    // периферийное звёздное поле + связи + реакция на курсор
+    this.updateStarfield()
 
     this.composer.render()
   }
@@ -815,11 +1035,15 @@ export default class IntroScene {
     this.geometry.dispose()
     this.bgGeo.dispose()
     this.trailGeo.dispose()
+    if (this.starGeo) this.starGeo.dispose()
+    if (this.linkGeo) this.linkGeo.dispose()
 
     // материалы
     this.mapMaterial.dispose()
     this.bgMat.dispose()
     this.trailMat.dispose()
+    if (this.starMat) this.starMat.dispose()
+    if (this.linkMat) this.linkMat.dispose()
 
     // postprocessing
     if (this.bloomPass && this.bloomPass.dispose) this.bloomPass.dispose()
