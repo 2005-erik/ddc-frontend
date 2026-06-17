@@ -255,12 +255,11 @@ export default class IntroScene {
     this.scene.add(this.trailPoints)
 
     // =====================
-    // ПЕРИФЕРИЙНОЕ ЗВЁЗДНОЕ ПОЛЕ + СВЯЗИ + КУРСОР
+    // КАРКАС ГЛОБУСА ВОКРУГ ЦЕНТРА + КУРСОР
     // =====================
     this.mouseNDC = new THREE.Vector2(0, 0) // позиция курсора в NDC (-1..1)
     this.mouseActive = false                 // курсор над сценой?
-    this._mouseWorld = new THREE.Vector3()   // курсор, спроецированный на плоскость звёзд
-    this.buildStarfield()
+    this.buildGlobe()
 
     // bound-обработчики
     this._onResize = this.onResize.bind(this)
@@ -270,79 +269,58 @@ export default class IntroScene {
   }
 
   // =====================
-  // ЗВЁЗДНОЕ ПОЛЕ ПЕРИФЕРИИ (Шаг: интерактивная сеть «созвездий»)
-  // Отдельный слой ПОЗАДИ центральной карты, на всю площадь viewport.
-  // Не трогает центральную сцену — только добавляет фон + реакцию на курсор.
+  // КАРКАС ГЛОБУСА вокруг центральной сцены (меридианы + параллели).
+  // Фоновый объём «цифрового мира». Не трогает карту/формы/тенге — обрамляет их.
   // =====================
-  buildStarfield() {
-    // Узлы сети — на упорядоченной СЕТКЕ с лёгким джиттером (не хаос «звёзд»),
-    // чтобы читалось как цифровая инфраструктура, а не звёздное небо.
-    const COLS = 16, ROWS = 9
-    const COUNT = COLS * ROWS
-    this.starCount = COUNT
-    this.starHome = new Float32Array(COUNT * 3) // базовые позиции (дом)
-    this.starPos = new Float32Array(COUNT * 3)  // текущие (анимируемые)
+  buildGlobe() {
+    const R = 16              // радиус: охватывает центральную карту (±15)
+    const MER = 12            // меридианы (вертикальные дуги)
+    const PAR = 7             // параллели (горизонтальные кольца)
+    const latSteps = 24, lonSteps = 64
+    const verts = []
 
-    const SPAN_X = 96, SPAN_Y = 54 // на всю площадь, включая края/углы
-    const cellX = SPAN_X / COLS, cellY = SPAN_Y / ROWS
-    let idx = 0
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        const baseX = -SPAN_X / 2 + (c + 0.5) * cellX
-        const baseY = -SPAN_Y / 2 + (r + 0.5) * cellY
-        // лёгкий джиттер (≤±35% ячейки) — структура сохраняется, но не «по линейке»
-        const x = baseX + (Math.random() - 0.5) * cellX * 0.5
-        const y = baseY + (Math.random() - 0.5) * cellY * 0.5
-        const z = -4 - Math.random() * 2 // плоская «плата», лёгкая глубина
-        this.starHome[idx * 3] = x; this.starHome[idx * 3 + 1] = y; this.starHome[idx * 3 + 2] = z
-        this.starPos[idx * 3] = x; this.starPos[idx * 3 + 1] = y; this.starPos[idx * 3 + 2] = z
-        idx++
+    // меридианы: дуги от полюса к полюсу на разных долготах
+    for (let m = 0; m < MER; m++) {
+      const lon = (m / MER) * Math.PI * 2
+      let prev = null
+      for (let k = 0; k <= latSteps; k++) {
+        const lat = -Math.PI / 2 + (k / latSteps) * Math.PI
+        const cl = Math.cos(lat)
+        const p = [R * cl * Math.sin(lon), R * Math.sin(lat), R * cl * Math.cos(lon)]
+        if (prev) verts.push(prev[0], prev[1], prev[2], p[0], p[1], p[2])
+        prev = p
+      }
+    }
+    // параллели: горизонтальные кольца на разных широтах (без полюсов)
+    for (let pI = 1; pI <= PAR; pI++) {
+      const lat = -Math.PI / 2 + (pI / (PAR + 1)) * Math.PI
+      const y = R * Math.sin(lat), cl = Math.cos(lat)
+      let prev = null
+      for (let k = 0; k <= lonSteps; k++) {
+        const lon = (k / lonSteps) * Math.PI * 2
+        const p = [R * cl * Math.cos(lon), y, R * cl * Math.sin(lon)]
+        if (prev) verts.push(prev[0], prev[1], prev[2], p[0], p[1], p[2])
+        prev = p
       }
     }
 
-    this.starGeo = new THREE.BufferGeometry()
-    this.starGeo.setAttribute('position', new THREE.BufferAttribute(this.starPos, 3))
-    this.starMat = new THREE.PointsMaterial({
-      color: new THREE.Color('#6DAFB6'), // контактные пятачки/via — приглушённый бирюзово-стальной
-      size: 0.18, transparent: true, opacity: 0.55, depthWrite: false, sizeAttenuation: true,
-      // PointsMaterial без текстуры рисует КВАДРАТНЫЕ точки — как пятачки на плате
-    })
-    this.starPoints = new THREE.Points(this.starGeo, this.starMat)
-    this.scene.add(this.starPoints)
-
-    // ── линии-связи: строгая сетка-мешь (соединяем соседей по сетке) ──
-    // LINK_DIST чуть больше шага сетки → связи в основном к ближайшим соседям.
-    this.LINK_DIST = Math.max(cellX, cellY) * 1.35 // ≈8.1
-    this.STAR_INFLUENCE = 14  // радиус влияния курсора (≈треть экрана)
-    this.STAR_REPEL = 3.2     // сдвиг узла от курсора (узлы статичнее)
-    this.MAX_SEG = 1600       // потолок отрезков (каждая трасса = 2 сегмента: 45° + ось)
-
-    this.linkPos = new Float32Array(this.MAX_SEG * 2 * 3)
-    this.linkAlpha = new Float32Array(this.MAX_SEG * 2)
-    this.linkGeo = new THREE.BufferGeometry()
-    this.linkGeo.setAttribute('position', new THREE.BufferAttribute(this.linkPos, 3))
-    this.linkGeo.setAttribute('alpha', new THREE.BufferAttribute(this.linkAlpha, 1))
-    this.linkMat = new THREE.ShaderMaterial({
+    this.globeGeo = new THREE.BufferGeometry()
+    this.globeGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3))
+    this.globeMat = new THREE.LineBasicMaterial({
+      color: new THREE.Color('#3E8E96'), // холодный бирюзово-стальной
       transparent: true,
+      opacity: 0.26,
+      blending: THREE.AdditiveBlending, // лёгкое свечение каркаса
       depthWrite: false,
-      blending: THREE.NormalBlending, // строгие дорожки платы, без неонового свечения
-      uniforms: { uColor: { value: new THREE.Color('#3E8E96') } }, // приглушённый бирюзово-стальной (PCB)
-      vertexShader: `
-        attribute float alpha;
-        varying float vAlpha;
-        void main() {
-          vAlpha = alpha;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        varying float vAlpha;
-        uniform vec3 uColor;
-        void main() { gl_FragColor = vec4(uColor, vAlpha); }
-      `,
     })
-    this.starLines = new THREE.LineSegments(this.linkGeo, this.linkMat)
-    this.scene.add(this.starLines)
+    this.globe = new THREE.LineSegments(this.globeGeo, this.globeMat)
+    this.globe.position.z = -2     // центр глобуса чуть позади карты — камера не входит внутрь
+    this.globe.rotation.x = 0.25   // лёгкий наклон оси (объёмнее)
+    this.scene.add(this.globe)
+
+    this.globeSpin = 0   // накопленный угол медленного вращения
+    this.globeYawOff = 0 // смещение вращения от курсора (lerp)
+    this.globeTiltOff = 0
   }
 
   // Курсор из React (NDC, -1..1)
@@ -354,91 +332,27 @@ export default class IntroScene {
     this.mouseActive = v
   }
 
-  // Обновление звёзд + связей + реакции на курсор (вызывается в animate).
-  updateStarfield() {
-    if (!this.starPoints) return
+  // Вращение глобуса + лёгкая реакция на курсор (вызывается в animate).
+  updateGlobe() {
+    if (!this.globe) return
 
-    // Интенсивность периферии: ярко в Hero (верх, scrollProgress≈0),
-    // спокойнее в контентных секциях (ниже) — чтобы не мешать тексту.
-    const inten = 1 - 0.6 * this.scrollProgress // 1.0 → 0.4
-    this.starMat.opacity = 0.22 + 0.3 * inten // спокойнее «звёздности», ровный свет узлов
+    // спокойнее в контентных секциях, ярче в Hero
+    const inten = 1 - 0.5 * this.scrollProgress // 1.0 → 0.5
+    // лёгкая подсветка каркаса при наведении (активируется «сеть мира»)
+    const hover = this.mouseActive ? 1.3 : 1
+    this.globeMat.opacity = (0.14 + 0.12 * inten) * hover
 
-    // курсор → мировые координаты на плоскости звёзд (z = -4)
-    const PLANE_Z = -4
-    let mx = Infinity, my = Infinity
-    if (this.mouseActive) {
-      this._mouseWorld.set(this.mouseNDC.x, this.mouseNDC.y, 0.5).unproject(this.camera)
-      const dx = this._mouseWorld.x - this.camera.position.x
-      const dy = this._mouseWorld.y - this.camera.position.y
-      const dz = this._mouseWorld.z - this.camera.position.z
-      const t = (PLANE_Z - this.camera.position.z) / dz
-      mx = this.camera.position.x + dx * t
-      my = this.camera.position.y + dy * t
-    }
+    // медленное вращение вокруг вертикальной оси
+    this.globeSpin += 0.0016
 
-    const R = this.STAR_INFLUENCE
-    const repel = this.STAR_REPEL * inten // в контентных секциях реакция слабее
-    const pos = this.starPos
-    const home = this.starHome
+    // лёгкое смещение вращения/наклона к курсору (плавный lerp, возврат при уходе)
+    const yawTarget = this.mouseActive ? this.mouseNDC.x * 0.18 : 0
+    const tiltTarget = this.mouseActive ? -this.mouseNDC.y * 0.12 : 0
+    this.globeYawOff += (yawTarget - this.globeYawOff) * 0.04
+    this.globeTiltOff += (tiltTarget - this.globeTiltOff) * 0.04
 
-    for (let i = 0; i < this.starCount; i++) {
-      const i3 = i * 3
-      let tx = home[i3], ty = home[i3 + 1]
-      if (this.mouseActive) {
-        const rx = home[i3] - mx, ry = home[i3 + 1] - my
-        const d = Math.hypot(rx, ry)
-        if (d < R && d > 0.0001) {
-          const push = (1 - d / R) * repel // мягкое отталкивание, спад к краю радиуса
-          tx += (rx / d) * push
-          ty += (ry / d) * push
-        }
-      }
-      // плавное easing к цели (и возврат домой, когда курсор уходит)
-      pos[i3] += (tx - pos[i3]) * 0.08
-      pos[i3 + 1] += (ty - pos[i3 + 1]) * 0.08
-    }
-    this.starGeo.attributes.position.needsUpdate = true
-
-    // ── ДОРОЖКИ ПЛАТЫ (PCB): между близкими узлами тянем трассу ломаной из
-    //    диагонали 45° + осевого сегмента (H/V). Никаких произвольных углов. ──
-    const LINK = this.LINK_DIST
-    const lp = this.linkPos, la = this.linkAlpha
-    let seg = 0
-    const baseAlpha = 0.32 * inten
-    // записать один сегмент (x1,y1,z1)->(x2,y2,z2) с альфой a
-    const putSeg = (x1, y1, z1, x2, y2, z2, a) => {
-      const o = seg * 6
-      lp[o] = x1; lp[o + 1] = y1; lp[o + 2] = z1
-      lp[o + 3] = x2; lp[o + 4] = y2; lp[o + 5] = z2
-      la[seg * 2] = a; la[seg * 2 + 1] = a
-      seg++
-    }
-    for (let i = 0; i < this.starCount && seg + 2 <= this.MAX_SEG; i++) {
-      const ax = pos[i * 3], ay = pos[i * 3 + 1], az = pos[i * 3 + 2]
-      for (let j = i + 1; j < this.starCount && seg + 2 <= this.MAX_SEG; j++) {
-        const bx = pos[j * 3], by = pos[j * 3 + 1], bz = pos[j * 3 + 2]
-        const dx = bx - ax, dy = by - ay
-        const d = Math.hypot(dx, dy)
-        if (d > LINK) continue
-        let a = (1 - d / LINK) * baseAlpha // ближе — ярче
-        // подсветка участка платы рядом с курсором
-        if (this.mouseActive) {
-          const near = Math.min(Math.hypot(ax - mx, ay - my), Math.hypot(bx - mx, by - my))
-          if (near < R) a *= 1 + 1.8 * (1 - near / R)
-        }
-        // излом под прямым углом/45°: сначала диагональ 45° на min(|dx|,|dy|),
-        // затем осевой сегмент (строго H или V) до точки B.
-        const m = Math.min(Math.abs(dx), Math.abs(dy))
-        const cx = ax + Math.sign(dx) * m
-        const cy = ay + Math.sign(dy) * m
-        const cz = (az + bz) * 0.5
-        putSeg(ax, ay, az, cx, cy, cz, a)       // диагональ 45° (или нулевая, если чистая ось)
-        putSeg(cx, cy, cz, bx, by, bz, a)       // осевой сегмент H/V (или нулевой, если чистая диагональ)
-      }
-    }
-    this.linkGeo.setDrawRange(0, seg * 2)
-    this.linkGeo.attributes.position.needsUpdate = true
-    this.linkGeo.attributes.alpha.needsUpdate = true
+    this.globe.rotation.y = this.globeSpin + this.globeYawOff
+    this.globe.rotation.x = 0.25 + this.globeTiltOff
   }
 
   // =====================
@@ -939,8 +853,8 @@ export default class IntroScene {
     this.mapMaterial.color.lerp(this.targetColor, 0.05)
     this.bloomPass.strength += (this.targetBloom - this.bloomPass.strength) * 0.05
 
-    // периферийное звёздное поле + связи + реакция на курсор
-    this.updateStarfield()
+    // каркас глобуса вокруг центра: вращение + реакция на курсор
+    this.updateGlobe()
 
     this.composer.render()
   }
@@ -1035,15 +949,13 @@ export default class IntroScene {
     this.geometry.dispose()
     this.bgGeo.dispose()
     this.trailGeo.dispose()
-    if (this.starGeo) this.starGeo.dispose()
-    if (this.linkGeo) this.linkGeo.dispose()
+    if (this.globeGeo) this.globeGeo.dispose()
 
     // материалы
     this.mapMaterial.dispose()
     this.bgMat.dispose()
     this.trailMat.dispose()
-    if (this.starMat) this.starMat.dispose()
-    if (this.linkMat) this.linkMat.dispose()
+    if (this.globeMat) this.globeMat.dispose()
 
     // postprocessing
     if (this.bloomPass && this.bloomPass.dispose) this.bloomPass.dispose()

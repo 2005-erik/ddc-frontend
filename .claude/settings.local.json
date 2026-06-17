@@ -32,7 +32,12 @@
       "Bash(curl -s -w \"\\\\n-> %{http_code}\\\\n\" -X POST http://localhost:3000/api/admin/login -H 'Content-Type: application/json' -d '{\"username\":\"nope\",\"password\":\"nope\"}')",
       "Bash(lsof -nP -iTCP:5432 -sTCP:LISTEN)",
       "Bash(lsof -nP -iTCP:3000 -sTCP:LISTEN)",
-      "Bash(pkill -f 'node server.js')"
+      "Bash(pkill -f 'node server.js')",
+      "Bash(echo \"importers-exit:$?\")",
+      "Bash(echo \"refs-exit:$?\")",
+      "Bash(git check-ignore *)",
+      "Bash(grep -n \"animate\\(\\\\|updateStarfield\\\\|requestAnimationFrame\\\\|this.disposed\\\\|return$\" src/scenes/introScene.js)",
+      "Bash(echo \"stale-refs-exit:$?\")"
     ]
   }
 }
