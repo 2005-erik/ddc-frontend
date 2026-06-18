@@ -6,13 +6,16 @@ import StatsSection from '../components/StatsSection.jsx'
 import AboutSection from '../components/AboutSection.jsx'
 import MissionSection from '../components/MissionSection.jsx'
 import ConsultSection from '../components/ConsultSection.jsx'
+import Typewriter from '../components/Typewriter.jsx'
 import { fetchNews } from '../api/news.js'
 
-// Кнопки в Hero: плавный скролл к секциям (без перехода на новый URL)
-const heroLinks = [
-  { id: 'about', label: 'О нас' },
-  { id: 'services', label: 'Услуги' },
-  { id: 'projects', label: 'Проекты' },
+// Печатающиеся фразы в Hero (под подзаголовком) — крутятся по кругу
+const heroPhrases = [
+  'Технологическая основа финансовой системы Казахстана',
+  'Оператор портала государственных закупок',
+  'Цифровая трансформация финансового сектора',
+  'Безопасность и надёжность банковской инфраструктуры',
+  '25+ лет технологического лидерства',
 ]
 
 function scrollToId(id) {
@@ -77,22 +80,17 @@ export default function Home() {
           </p>
         </div>
 
-        <nav
-          className={`flex flex-wrap items-center justify-center gap-4 transition-all delay-300 duration-1000 ease-out ${
+        {/* Печатающийся слоган (заменил дублирующие кнопки навигации) */}
+        <div
+          className={`flex min-h-[2.5rem] max-w-3xl items-center justify-center px-2 transition-all delay-300 duration-1000 ease-out ${
             introDone ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0'
           }`}
         >
-          {heroLinks.map((l) => (
-            <button
-              key={l.id}
-              type="button"
-              onClick={() => scrollToId(l.id)}
-              className="rounded-full border border-ddc-blue/60 px-5 py-2 text-sm text-white/90 backdrop-blur-sm transition hover:border-nbk-gold hover:text-nbk-gold"
-            >
-              {l.label}
-            </button>
-          ))}
-        </nav>
+          <Typewriter
+            phrases={heroPhrases}
+            className="text-lg font-medium text-nbk-gold/90 drop-shadow-[0_0_12px_rgba(255,215,0,0.3)] sm:text-2xl"
+          />
+        </div>
 
         {/* Индикатор скролла: пульсирующий шеврон, скрывается при скролле */}
         <button
