@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 
 // Single-page: ссылки ведут к секциям на главной (плавный скролл, без смены URL).
 // id: null — скролл наверх (Hero).
@@ -131,14 +132,24 @@ export default function Header() {
     scrollToId(id)
   }
 
+  {/* TODO: ВРЕМЕННО — вернуть "Портал закупок", убрать "Админ" перед продакшеном */}
   const ProcurementBtn = (
-    <a
-      href={PROCUREMENT_URL}
+    <Link
+      to="/admin"
       className="whitespace-nowrap rounded-lg bg-nbk-gold px-3 py-1.5 text-xs font-semibold tracking-wide text-ink shadow-[0_0_14px_rgba(255,215,0,0.2)] transition hover:bg-nbk-gold-soft"
     >
-      Портал закупок
-    </a>
+      Админ
+    </Link>
   )
+  // Продакшен-вариант (вернуть вместо блока выше):
+  // const ProcurementBtn = (
+  //   <a
+  //     href={PROCUREMENT_URL}
+  //     className="whitespace-nowrap rounded-lg bg-nbk-gold px-3 py-1.5 text-xs font-semibold tracking-wide text-ink shadow-[0_0_14px_rgba(255,215,0,0.2)] transition hover:bg-nbk-gold-soft"
+  //   >
+  //     Портал закупок
+  //   </a>
+  // )
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-ink/40 backdrop-blur-md">
