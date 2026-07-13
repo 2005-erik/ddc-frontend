@@ -136,7 +136,7 @@ export default function Header() {
   const ProcurementBtn = (
     <Link
       to="/admin"
-      className="whitespace-nowrap rounded-lg bg-nbk-gold px-3 py-1.5 text-xs font-semibold tracking-wide text-ink shadow-[0_0_14px_rgba(255,215,0,0.2)] transition hover:bg-nbk-gold-soft"
+      className="whitespace-nowrap rounded-lg bg-nbk-gold px-3 py-1.5 text-xs font-semibold tracking-wide text-ink shadow-[0_0_14px_rgba(255,187,52,0.2)] transition hover:bg-nbk-gold-soft"
     >
       Админ
     </Link>
@@ -145,7 +145,7 @@ export default function Header() {
   // const ProcurementBtn = (
   //   <a
   //     href={PROCUREMENT_URL}
-  //     className="whitespace-nowrap rounded-lg bg-nbk-gold px-3 py-1.5 text-xs font-semibold tracking-wide text-ink shadow-[0_0_14px_rgba(255,215,0,0.2)] transition hover:bg-nbk-gold-soft"
+  //     className="whitespace-nowrap rounded-lg bg-nbk-gold px-3 py-1.5 text-xs font-semibold tracking-wide text-ink shadow-[0_0_14px_rgba(255,187,52,0.2)] transition hover:bg-nbk-gold-soft"
   //   >
   //     Портал закупок
   //   </a>

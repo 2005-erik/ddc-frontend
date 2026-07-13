@@ -43,9 +43,9 @@ export default function AdminPanel() {
   }, [refreshNewCount])
 
   return (
-    <div className="flex min-h-screen bg-ink-900 text-white">
+    <div className="flex min-h-screen bg-ink text-white">
       {/* Сайдбар */}
-      <aside className="flex w-56 shrink-0 flex-col border-r border-white/10 bg-ink-800">
+      <aside className="flex w-56 shrink-0 flex-col border-r border-white/10 bg-ink-900">
         <div className="border-b border-white/10 px-5 py-5">
           <div className="font-bold text-nbk-gold">DDC</div>
           <div className="text-xs text-white/40">Админ-панель</div>

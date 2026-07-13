@@ -107,7 +107,7 @@ export default function NewsSection({ onAuthError }) {
       {/* Форма добавления / редактирования */}
       <form
         onSubmit={onSubmit}
-        className="mb-8 rounded-lg border border-white/10 bg-ink-800 p-5"
+        className="mb-8 rounded-lg border border-white/10 bg-ink-900 p-5"
       >
         <div className="mb-3 font-semibold text-nbk-gold">
           {editingId === null ? 'Добавить новость' : `Редактирование #${editingId}`}
@@ -152,7 +152,7 @@ export default function NewsSection({ onAuthError }) {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-lg bg-ddc-blue px-4 py-2 text-sm font-semibold text-white transition hover:bg-ddc-blue-light disabled:opacity-60"
+            className="rounded-lg bg-nbk-gold px-4 py-2 text-sm font-semibold text-ink-900 transition hover:bg-nbk-gold-soft disabled:opacity-60"
           >
             {saving ? 'Сохранение…' : editingId === null ? 'Добавить' : 'Сохранить'}
           </button>
@@ -174,9 +174,9 @@ export default function NewsSection({ onAuthError }) {
       ) : rows.length === 0 ? (
         <p className="text-white/50">Новостей пока нет.</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-white/10">
+        <div className="overflow-x-auto rounded-lg border border-white/10 bg-ink-900">
           <table className="w-full min-w-[700px] text-left text-sm">
-            <thead className="bg-ink-800 text-white/60">
+            <thead className="bg-white/5 text-white/60">
               <tr>
                 <th className="px-4 py-3 font-medium">Дата</th>
                 <th className="px-4 py-3 font-medium">Заголовок</th>

@@ -9,7 +9,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 // КОНСТАНТЫ
 // =====================
 const particleCount = 4000
-const GOLD = new THREE.Color('#FFD700')
+const GOLD = new THREE.Color('#FFBB34')
 
 const worldWidth = 30
 const bgCount = 600
@@ -23,15 +23,15 @@ const TRAIL_MAX = 1200
 // Благородные тона в теме сайта. Цвета-объекты создаём один раз.
 // =====================
 const SECTION_COLORS = {
-  hero:     new THREE.Color('#FFD700'), // тёплое золото
-  news:     new THREE.Color('#FFD700'), // тёплое золото
-  about:    new THREE.Color('#E8C547'), // янтарь/шампань
-  stats:    new THREE.Color('#3B6FD4'), // глубокий синий НБК
-  services: new THREE.Color('#5B8FD9'), // холодный стальной синий
+  hero:     new THREE.Color('#FFBB34'), // фирменное золото DDC
+  news:     new THREE.Color('#FFBB34'), // фирменное золото DDC
+  about:    new THREE.Color('#ECC371'), // песочный акцент
+  stats:    new THREE.Color('#2BBAAC'), // фирменная бирюза
+  services: new THREE.Color('#57CFC2'), // светлая бирюза
   projects: new THREE.Color('#2EB8A8'), // бирюзовый/teal
-  mission:  new THREE.Color('#FFCB30'), // насыщенное яркое золото
-  consult:  new THREE.Color('#C9B98A'), // приглушённый золотисто-серый
-  contacts: new THREE.Color('#C9B98A'), // приглушённый золотисто-серый
+  mission:  new THREE.Color('#FFBB34'), // фирменное золото DDC
+  consult:  new THREE.Color('#ECC371'), // песочный акцент
+  contacts: new THREE.Color('#ECC371'), // песочный акцент
 }
 
 // База bloom = 0.9 (см. конструктор UnrealBloomPass). Чуть ярче на mission,
@@ -103,7 +103,7 @@ export default class IntroScene {
     // SCENE / CAMERA / RENDERER
     // =====================
     this.scene = new THREE.Scene()
-    this.scene.background = new THREE.Color('#000000')
+    this.scene.background = new THREE.Color('#022622') // фирменный тёмно-зелёный DDC
 
     this.camera = new THREE.PerspectiveCamera(
       75, window.innerWidth / window.innerHeight, 0.1, 1000
@@ -369,7 +369,7 @@ export default class IntroScene {
     ctx.fillStyle = 'rgba(20, 14, 0, 0.55)'
     ctx.fillText('₸', 128, 138)
     ctx.lineWidth = 6
-    ctx.strokeStyle = '#FFCF40'
+    ctx.strokeStyle = '#FFBB34'
     ctx.lineJoin = 'round'
     ctx.strokeText('₸', 128, 138)
 
@@ -399,9 +399,9 @@ export default class IntroScene {
     // Рецепт чёткости как у центрального тенге: тёмное «тело» почти не светится
     // в bloom и не расплывается в кляксу, а ЧЁТКИЙ серебристо-голубой контур
     // задаёт ясную форму. Цвет — серебристо-голубой, как и раньше.
-    const fill = 'rgba(18, 28, 52, 0.55)' // тёмное тело (низкая яркость → меньше bloom)
-    const stroke = '#C3D6F2'              // светлый серебристо-голубой контур
-    const dark = '#0C1526'                // тёмные «вырезы»
+    const fill = 'rgba(2, 38, 34, 0.55)'  // тёмно-зелёное тело (низкая яркость → меньше bloom)
+    const stroke = '#C3D6F2'              // светлый серебристо-серый контур (для чёткости)
+    const dark = '#022622'                // тёмные «вырезы» (фирменный тёмно-зелёный)
     ctx.lineJoin = 'round'
     ctx.lineCap = 'round'
 

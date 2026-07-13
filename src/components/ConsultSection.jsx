@@ -157,7 +157,7 @@ export default function ConsultSection() {
               <button
                 type="submit"
                 disabled={status === 'sending'}
-                className="rounded-lg bg-nbk-gold px-5 py-2.5 text-sm font-semibold tracking-wide text-ink shadow-[0_0_14px_rgba(255,215,0,0.2)] transition hover:bg-nbk-gold-soft disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-lg bg-nbk-gold px-5 py-2.5 text-sm font-semibold tracking-wide text-ink shadow-[0_0_14px_rgba(255,187,52,0.2)] transition hover:bg-nbk-gold-soft disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {status === 'sending' ? 'Отправка…' : 'Отправить заявку'}
               </button>

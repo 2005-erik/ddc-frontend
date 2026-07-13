@@ -16,8 +16,8 @@ canvas {
   bottom: 12%;
   transform: translateX(-50%) translateY(20px);
   text-align: center;
-  color: #ffd700;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #ffbb34;
+  font-family: 'Halvar Breitschrift', -apple-system, 'SF Pro Display', system-ui, sans-serif;
   opacity: 0;
   transition: opacity 1.2s ease, transform 1.2s ease;
   pointer-events: none;
@@ -34,7 +34,7 @@ canvas {
   margin: 0 0 0.3rem;
   font-weight: 700;
   letter-spacing: 0.04em;
-  text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  text-shadow: 0 0 20px rgba(255, 187, 52, 0.5);
 }
 
 #intro-texts p {

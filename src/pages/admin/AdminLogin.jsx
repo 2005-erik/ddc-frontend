@@ -33,10 +33,10 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-ink-900 px-4 text-white">
+    <div className="flex min-h-screen items-center justify-center bg-ink px-4 text-white">
       <form
         onSubmit={onSubmit}
-        className="w-full max-w-sm rounded-xl border border-white/10 bg-ink-800 p-8 shadow-xl"
+        className="w-full max-w-sm rounded-xl border border-white/10 bg-ink-900 p-8 shadow-xl"
       >
         <h1 className="text-xl font-bold text-nbk-gold">Админ-панель DDC</h1>
         <p className="mt-1 text-sm text-white/50">Вход для администраторов</p>
@@ -74,7 +74,7 @@ export default function AdminLogin() {
         <button
           type="submit"
           disabled={busy}
-          className="mt-6 w-full rounded-lg bg-ddc-blue px-4 py-2 font-semibold text-white transition hover:bg-ddc-blue-light disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-6 w-full rounded-lg bg-nbk-gold px-4 py-2 font-semibold text-ink-900 transition hover:bg-nbk-gold-soft disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? 'Вход…' : 'Войти'}
         </button>

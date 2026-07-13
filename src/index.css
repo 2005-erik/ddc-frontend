@@ -2,6 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────
+   Фирменный шрифт DDC — HALVAR.
+   Файлов Halvar в проекте пока нет, поэтому используется фолбэк SF Pro
+   (системный шрифт Apple) по брендбуку — см. --font-sans ниже.
+
+   Чтобы подключить настоящий Halvar: положите файлы в public/fonts/
+   и раскомментируйте блок ниже (форматы woff2/woff предпочтительны).
+
+   @font-face {
+     font-family: 'Halvar Breitschrift';
+     src: url('/fonts/HalvarBreit-Regular.woff2') format('woff2'),
+          url('/fonts/HalvarBreit-Regular.woff') format('woff');
+     font-weight: 400;
+     font-style: normal;
+     font-display: swap;
+   }
+   @font-face {
+     font-family: 'Halvar Breitschrift';
+     src: url('/fonts/HalvarBreit-Bold.woff2') format('woff2'),
+          url('/fonts/HalvarBreit-Bold.woff') format('woff');
+     font-weight: 700;
+     font-style: normal;
+     font-display: swap;
+   }
+   ───────────────────────────────────────────── */
+
 @layer components {
   /* Локальная «плашка» под текст: полупрозрачный тёмный фон + blur ТОЛЬКО под
      блоком, чтобы между блоками и по краям были видны цветные частицы сцены.
@@ -17,14 +43,25 @@
 
 :root {
   color-scheme: dark;
+  /* Фирменный шрифтовой стек DDC: Halvar → SF Pro → системные → sans-serif.
+     Совпадает с theme.fontFamily.sans в tailwind.config.js. */
+  --font-sans: 'Halvar Breitschrift', 'Halvar', -apple-system, BlinkMacSystemFont,
+    'SF Pro Display', 'SF Pro Text', system-ui, 'Segoe UI', Roboto, sans-serif;
 }
 
 html,
 body {
   margin: 0;
-  background: theme('colors.ink.DEFAULT');
+  /* Фирменный зелёный фон DDC: градиент от основного #0F534C к самому
+     тёмному #022622 для глубины. */
+  background: linear-gradient(
+    160deg,
+    theme('colors.ink.DEFAULT') 0%,
+    theme('colors.ink.900') 100%
+  );
+  background-attachment: fixed;
   color: #e8ecf5;
-  font-family: theme('fontFamily.sans');
+  font-family: var(--font-sans);
 }
 
 #app {

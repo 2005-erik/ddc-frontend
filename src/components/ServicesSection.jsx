@@ -52,7 +52,7 @@ export default function ServicesSection() {
           {services.map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
-              className="plate group p-6 transition-all duration-300 hover:-translate-y-1 hover:border-nbk-gold/50 hover:shadow-[0_0_28px_rgba(255,215,0,0.15)]"
+              className="plate group p-6 transition-all duration-300 hover:-translate-y-1 hover:border-nbk-gold/50 hover:shadow-[0_0_28px_rgba(255,187,52,0.15)]"
             >
               <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl border border-nbk-gold/30 bg-nbk-gold/10 text-nbk-gold transition-colors group-hover:bg-nbk-gold/20">
                 <Icon className="h-6 w-6" strokeWidth={1.75} aria-hidden="true" />

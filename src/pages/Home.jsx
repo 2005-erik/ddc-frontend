@@ -72,7 +72,7 @@ export default function Home() {
             introDone ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0'
           }`}
         >
-          <h1 className="text-4xl font-bold tracking-wide text-nbk-gold drop-shadow-[0_0_20px_rgba(255,215,0,0.45)] sm:text-5xl">
+          <h1 className="text-4xl font-bold tracking-wide text-nbk-gold drop-shadow-[0_0_20px_rgba(255,187,52,0.45)] sm:text-5xl">
             Центр цифрового развития
           </h1>
           <p className="mt-3 text-lg text-white/80">
@@ -88,7 +88,7 @@ export default function Home() {
         >
           <Typewriter
             phrases={heroPhrases}
-            className="text-lg font-medium text-nbk-gold/90 drop-shadow-[0_0_12px_rgba(255,215,0,0.3)] sm:text-2xl"
+            className="text-lg font-medium text-nbk-gold/90 drop-shadow-[0_0_12px_rgba(255,187,52,0.3)] sm:text-2xl"
           />
         </div>
 

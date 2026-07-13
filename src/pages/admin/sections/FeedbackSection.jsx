@@ -33,9 +33,9 @@ export default function FeedbackSection({ onAuthError }) {
       ) : rows.length === 0 ? (
         <p className="text-white/50">Обращений пока нет.</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-white/10">
+        <div className="overflow-x-auto rounded-lg border border-white/10 bg-ink-900">
           <table className="w-full min-w-[700px] text-left text-sm">
-            <thead className="bg-ink-800 text-white/60">
+            <thead className="bg-white/5 text-white/60">
               <tr>
                 <th className="px-4 py-3 font-medium">Дата</th>
                 <th className="px-4 py-3 font-medium">Тип</th>

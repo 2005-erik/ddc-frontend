@@ -76,7 +76,7 @@ export default function NewsCarousel({ items = [] }) {
           type="button"
           onClick={prev}
           aria-label="Предыдущие новости"
-          className="absolute left-0 top-[200px] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-[#0d1424]/90 text-xl text-white shadow-lg backdrop-blur transition hover:border-[#FFD700] hover:text-[#FFD700] sm:-left-4"
+          className="absolute left-0 top-[200px] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-ink-900/90 text-xl text-white shadow-lg backdrop-blur transition hover:border-nbk-gold hover:text-nbk-gold sm:-left-4"
         >
           ‹
         </button>
@@ -84,7 +84,7 @@ export default function NewsCarousel({ items = [] }) {
           type="button"
           onClick={next}
           aria-label="Следующие новости"
-          className="absolute right-0 top-[200px] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-[#0d1424]/90 text-xl text-white shadow-lg backdrop-blur transition hover:border-[#FFD700] hover:text-[#FFD700] sm:-right-4"
+          className="absolute right-0 top-[200px] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-ink-900/90 text-xl text-white shadow-lg backdrop-blur transition hover:border-nbk-gold hover:text-nbk-gold sm:-right-4"
         >
           ›
         </button>
@@ -100,7 +100,7 @@ export default function NewsCarousel({ items = [] }) {
             aria-label={`Перейти к слайду ${i + 1}`}
             aria-current={i === index}
             className={`h-2 rounded-full transition-all ${
-              i === index ? 'w-6 bg-[#FFD700]' : 'w-2 bg-white/30 hover:bg-white/60'
+              i === index ? 'w-6 bg-nbk-gold' : 'w-2 bg-white/30 hover:bg-white/60'
             }`}
           />
         ))}

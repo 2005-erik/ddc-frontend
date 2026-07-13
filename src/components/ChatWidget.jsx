@@ -378,7 +378,7 @@ export default function ChatWidget() {
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? 'Закрыть чат' : 'Открыть чат с помощником'}
         aria-expanded={open}
-        className="fixed bottom-5 right-4 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-nbk-gold text-ink shadow-[0_0_24px_rgba(255,215,0,0.4)] transition hover:scale-105 hover:bg-nbk-gold-soft sm:right-6"
+        className="fixed bottom-5 right-4 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-nbk-gold text-ink shadow-[0_0_24px_rgba(255,187,52,0.4)] transition hover:scale-105 hover:bg-nbk-gold-soft sm:right-6"
       >
         {open ? <X className="h-6 w-6" aria-hidden="true" /> : <MessageCircle className="h-6 w-6" aria-hidden="true" />}
       </button>

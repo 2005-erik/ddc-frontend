@@ -80,7 +80,7 @@ export default function AboutSection() {
                     <span
                       className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
                         isActive
-                          ? 'border-nbk-gold bg-nbk-gold/20 shadow-[0_0_18px_rgba(255,215,0,0.4)]'
+                          ? 'border-nbk-gold bg-nbk-gold/20 shadow-[0_0_18px_rgba(255,187,52,0.4)]'
                           : 'border-white/25 bg-ink group-hover:border-nbk-gold/60'
                       }`}
                     >

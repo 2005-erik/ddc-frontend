@@ -47,7 +47,7 @@ export default function MissionSection() {
           {values.map(({ icon: Icon, label }) => (
             <div
               key={label}
-              className="plate group flex flex-col items-center gap-3 px-4 py-6 text-center transition-all duration-300 hover:-translate-y-1 hover:border-nbk-gold/50 hover:shadow-[0_0_24px_rgba(255,215,0,0.15)]"
+              className="plate group flex flex-col items-center gap-3 px-4 py-6 text-center transition-all duration-300 hover:-translate-y-1 hover:border-nbk-gold/50 hover:shadow-[0_0_24px_rgba(255,187,52,0.15)]"
             >
               <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-nbk-gold/30 bg-nbk-gold/10 text-nbk-gold transition-colors group-hover:bg-nbk-gold/20">
                 <Icon className="h-6 w-6" strokeWidth={1.75} aria-hidden="true" />
